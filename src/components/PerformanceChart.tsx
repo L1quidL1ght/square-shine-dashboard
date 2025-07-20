@@ -1,3 +1,4 @@
+
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DailyPerformance } from "@/types/square";
@@ -8,24 +9,24 @@ interface PerformanceChartProps {
 
 export function PerformanceChart({ data }: PerformanceChartProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Daily Performance</CardTitle>
-        <CardDescription>Sales and cover count over time</CardDescription>
+    <Card className="border-0 shadow-lg bg-card/50 backdrop-blur-sm hover:shadow-xl transition-all duration-300 animate-scale-in">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-xl font-bold">Daily Performance</CardTitle>
+        <CardDescription className="text-base">Sales and cover count over time</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data}>
+        <ResponsiveContainer width="100%" height={350}>
+          <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <XAxis 
               dataKey="date" 
-              stroke="#888888"
+              stroke="hsl(var(--muted-foreground))"
               fontSize={12}
               tickLine={false}
               axisLine={false}
               tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             />
             <YAxis
-              stroke="#888888"
+              stroke="hsl(var(--muted-foreground))"
               fontSize={12}
               tickLine={false}
               axisLine={false}
@@ -35,29 +36,29 @@ export function PerformanceChart({ data }: PerformanceChartProps) {
               content={({ active, payload, label }) => {
                 if (active && payload && payload.length) {
                   return (
-                    <div className="rounded-lg border bg-background p-2 shadow-sm">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="flex flex-col">
-                          <span className="text-[0.70rem] uppercase text-muted-foreground">
+                    <div className="rounded-xl border bg-background/95 backdrop-blur-sm p-4 shadow-xl">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <span className="text-[0.70rem] uppercase text-muted-foreground font-medium">
                             Date
                           </span>
-                          <span className="font-bold text-muted-foreground">
+                          <span className="font-semibold text-foreground">
                             {new Date(label).toLocaleDateString()}
                           </span>
                         </div>
-                        <div className="flex flex-col">
-                          <span className="text-[0.70rem] uppercase text-muted-foreground">
+                        <div className="space-y-1">
+                          <span className="text-[0.70rem] uppercase text-muted-foreground font-medium">
                             Sales
                           </span>
-                          <span className="font-bold">
+                          <span className="font-bold text-chart-blue">
                             ${typeof payload[0].value === 'number' ? payload[0].value.toFixed(2) : payload[0].value}
                           </span>
                         </div>
-                        <div className="flex flex-col">
-                          <span className="text-[0.70rem] uppercase text-muted-foreground">
+                        <div className="space-y-1">
+                          <span className="text-[0.70rem] uppercase text-muted-foreground font-medium">
                             Covers
                           </span>
-                          <span className="font-bold">
+                          <span className="font-bold text-chart-green">
                             {payload[1].value}
                           </span>
                         </div>
@@ -69,8 +70,20 @@ export function PerformanceChart({ data }: PerformanceChartProps) {
               }}
             />
             <Legend />
-            <Bar dataKey="sales" name="Sales ($)" fill="hsl(var(--chart-blue))" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="covers" name="Covers" fill="hsl(var(--chart-green))" radius={[4, 4, 0, 0]} />
+            <Bar 
+              dataKey="sales" 
+              name="Sales ($)" 
+              fill="hsl(var(--chart-blue))" 
+              radius={[8, 8, 0, 0]}
+              className="hover:opacity-80 transition-opacity"
+            />
+            <Bar 
+              dataKey="covers" 
+              name="Covers" 
+              fill="hsl(var(--chart-green))" 
+              radius={[8, 8, 0, 0]}
+              className="hover:opacity-80 transition-opacity"
+            />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

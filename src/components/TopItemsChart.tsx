@@ -1,3 +1,4 @@
+
 import { Pie, PieChart, ResponsiveContainer, Cell, Tooltip, Legend } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TopItem } from "@/types/square";
@@ -28,13 +29,13 @@ export function TopItemsChart({ data }: TopItemsChartProps) {
   }));
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Top Items by Revenue</CardTitle>
-        <CardDescription>Best performing menu items</CardDescription>
+    <Card className="border-0 shadow-lg bg-card/50 backdrop-blur-sm hover:shadow-xl transition-all duration-300 animate-scale-in">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-xl font-bold">Top Items by Revenue</CardTitle>
+        <CardDescription className="text-base">Best performing menu items</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={350}>
           <PieChart>
             <Pie
               data={chartData}
@@ -42,9 +43,12 @@ export function TopItemsChart({ data }: TopItemsChartProps) {
               nameKey="name"
               cx="50%"
               cy="50%"
-              outerRadius={80}
+              outerRadius={100}
+              innerRadius={40}
               fill="#8884d8"
               label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+              labelLine={false}
+              className="hover:opacity-80 transition-opacity"
             >
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -55,29 +59,29 @@ export function TopItemsChart({ data }: TopItemsChartProps) {
                 if (active && payload && payload.length) {
                   const data = payload[0].payload;
                   return (
-                    <div className="rounded-lg border bg-background p-2 shadow-sm">
-                      <div className="grid gap-2">
-                        <div className="flex flex-col">
-                          <span className="text-[0.70rem] uppercase text-muted-foreground">
+                    <div className="rounded-xl border bg-background/95 backdrop-blur-sm p-4 shadow-xl">
+                      <div className="grid gap-3">
+                        <div className="space-y-1">
+                          <span className="text-[0.70rem] uppercase text-muted-foreground font-medium">
                             Item
                           </span>
-                          <span className="font-bold">
+                          <span className="font-bold text-foreground">
                             {data.name}
                           </span>
                         </div>
-                        <div className="flex flex-col">
-                          <span className="text-[0.70rem] uppercase text-muted-foreground">
+                        <div className="space-y-1">
+                          <span className="text-[0.70rem] uppercase text-muted-foreground font-medium">
                             Revenue
                           </span>
-                          <span className="font-bold">
+                          <span className="font-bold text-chart-green">
                             ${data.value.toFixed(2)}
                           </span>
                         </div>
-                        <div className="flex flex-col">
-                          <span className="text-[0.70rem] uppercase text-muted-foreground">
+                        <div className="space-y-1">
+                          <span className="text-[0.70rem] uppercase text-muted-foreground font-medium">
                             Quantity Sold
                           </span>
-                          <span className="font-bold">
+                          <span className="font-bold text-chart-blue">
                             {data.quantity}
                           </span>
                         </div>
