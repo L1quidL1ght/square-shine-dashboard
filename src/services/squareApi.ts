@@ -30,9 +30,9 @@ class SquareApiService {
   private applicationId: string;
 
   constructor() {
-    // In a real app, these would come from environment variables
-    this.accessToken = process.env.SQUARE_ACCESS_TOKEN || 'mock_token';
-    this.applicationId = process.env.SQUARE_APPLICATION_ID || 'mock_app_id';
+    // Using mock values for development - in production, these would come from secure backend
+    this.accessToken = 'mock_token';
+    this.applicationId = 'mock_app_id';
   }
 
   async getTeamMembers(): Promise<TeamMember[]> {
