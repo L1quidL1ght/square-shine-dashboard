@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { corsHeaders } from '../_shared/cors.ts'
 
@@ -10,7 +11,11 @@ serve(async (req) => {
   }
 
   try {
-    const { action, ...params } = await req.json()
+    const body = await req.json()
+    console.log('Request body:', body)
+    
+    // Extract endpoint from the request body
+    const { endpoint, ...params } = body
     
     const accessToken = Deno.env.get('SQUARE_ACCESS_TOKEN')
     const locationId = Deno.env.get('SQUARE_LOCATION_ID')
@@ -27,36 +32,47 @@ serve(async (req) => {
 
     let result;
 
-    switch (action) {
-      case 'getLocations':
+    // Handle different endpoints
+    switch (endpoint) {
+      case '/locations':
         const locationsResponse = await fetch(`${SQUARE_BASE_URL}/locations`, {
           method: 'GET',
           headers
         });
         const locationsData = await locationsResponse.json();
-        result = locationsData.locations?.map(loc => ({
-          id: loc.id,
-          name: loc.name,
-          status: loc.status,
-          address: loc.address
-        })) || [];
+        result = {
+          locations: locationsData.locations?.map(loc => ({
+            id: loc.id,
+            name: loc.name,
+            status: loc.status,
+            address: loc.address
+          })) || []
+        };
         break;
 
-      case 'getTeamMembers':
+      case '/team-members':
         const teamMembersResponse = await fetch(`${SQUARE_BASE_URL}/team-members`, {
           method: 'GET',
           headers
         });
         const teamMembersData = await teamMembersResponse.json();
         // Filter active team members for the specified location
-        result = teamMembersData.team_members?.filter(member => 
+        const filteredMembers = teamMembersData.team_members?.filter(member => 
           member.status === 'ACTIVE' && 
           (!member.assigned_locations?.length || member.assigned_locations.includes(locationId))
         ) || [];
+        result = {
+          teamMembers: filteredMembers
+        };
         break;
 
-      case 'getOrders':
-        const { startDate, endDate, teamMemberId } = params;
+      case '/orders':
+        // Extract query parameters for orders
+        const url = new URL('http://dummy.com' + endpoint + (params.body ? `?${new URLSearchParams(JSON.parse(params.body))}` : ''));
+        const startDate = url.searchParams.get('startDate');
+        const endDate = url.searchParams.get('endDate');
+        const teamMemberId = url.searchParams.get('teamMemberId');
+
         const searchBody = {
           filter: {
             date_time_filter: {
@@ -90,19 +106,21 @@ serve(async (req) => {
           );
         }
 
-        result = orders;
+        result = { orders };
         break;
 
-      case 'calculatePerformance':
-        const { performanceStartDate, performanceEndDate, performanceTeamMemberId } = params;
+      case '/performance':
+        // Handle performance metrics calculation
+        const performanceData = params.body ? JSON.parse(params.body) : {};
+        const { startDate: perfStartDate, endDate: perfEndDate, teamMemberId: perfTeamMemberId } = performanceData;
         
         // Get orders for performance calculation
         const performanceSearchBody = {
           filter: {
             date_time_filter: {
               created_at: {
-                start_at: performanceStartDate,
-                end_at: performanceEndDate
+                start_at: perfStartDate,
+                end_at: perfEndDate
               }
             },
             state_filter: {
@@ -122,10 +140,10 @@ serve(async (req) => {
         let performanceOrders = performanceOrdersData.orders || [];
 
         // Filter by team member if specified
-        if (performanceTeamMemberId && performanceTeamMemberId !== 'all') {
+        if (perfTeamMemberId && perfTeamMemberId !== 'all') {
           performanceOrders = performanceOrders.filter(order => 
             order.fulfillments?.some(f => 
-              f.fulfillment_entries?.some(e => e.team_member_id === performanceTeamMemberId)
+              f.fulfillment_entries?.some(e => e.team_member_id === perfTeamMemberId)
             )
           );
         }
@@ -134,7 +152,7 @@ serve(async (req) => {
         let totalHours = 0;
         let totalShifts = 0;
         
-        if (performanceTeamMemberId && performanceTeamMemberId !== 'all') {
+        if (perfTeamMemberId && perfTeamMemberId !== 'all') {
           try {
             const timecardsResponse = await fetch(`${SQUARE_BASE_URL}/labor/timecards/search`, {
               method: 'POST',
@@ -142,10 +160,10 @@ serve(async (req) => {
               body: JSON.stringify({
                 query: {
                   filter: {
-                    team_member_ids: [performanceTeamMemberId],
+                    team_member_ids: [perfTeamMemberId],
                     start_at: {
-                      start_at: performanceStartDate,
-                      end_at: performanceEndDate
+                      start_at: perfStartDate,
+                      end_at: perfEndDate
                     }
                   }
                 }
@@ -183,8 +201,8 @@ serve(async (req) => {
         if (totalHours > 0) {
           salesPerHour = netSales / totalHours;
         } else {
-          const startTime = new Date(performanceStartDate);
-          const endTime = new Date(performanceEndDate);
+          const startTime = new Date(perfStartDate);
+          const endTime = new Date(perfEndDate);
           const hoursInPeriod = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
           salesPerHour = hoursInPeriod > 0 ? netSales / hoursInPeriod : 0;
         }
@@ -240,11 +258,11 @@ serve(async (req) => {
         break;
 
       default:
-        throw new Error(`Unknown action: ${action}`);
+        throw new Error(`Unknown endpoint: ${endpoint}`);
     }
 
     return new Response(
-      JSON.stringify({ success: true, data: result }),
+      JSON.stringify(result),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
