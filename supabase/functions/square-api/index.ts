@@ -65,6 +65,55 @@ serve(async (req) => {
       })
     }
 
+    // Test a basic Square API call
+    let squareApiTest = null
+    let squareApiError = null
+    
+    try {
+      const baseUrl = environment === 'production' 
+        ? 'https://connect.squareup.com/v2'
+        : 'https://connect.squareupsandbox.com/v2'
+      
+      console.log(`🧪 Testing Square API call to ${baseUrl}/locations`)
+      
+      const response = await fetch(`${baseUrl}/locations`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Square-Version': '2023-10-18',
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      console.log(`📡 Square API response status: ${response.status}`)
+      
+      if (response.ok) {
+        const data = await response.json()
+        squareApiTest = {
+          success: true,
+          status: response.status,
+          locationCount: data.locations?.length || 0,
+          firstLocationName: data.locations?.[0]?.name || 'No locations found'
+        }
+        console.log('✅ Square API test successful:', squareApiTest)
+      } else {
+        const errorText = await response.text()
+        squareApiError = {
+          success: false,
+          status: response.status,
+          error: errorText
+        }
+        console.log('❌ Square API test failed:', squareApiError)
+      }
+    } catch (apiError: any) {
+      squareApiError = {
+        success: false,
+        error: apiError.message,
+        details: apiError.toString()
+      }
+      console.log('💥 Square API test threw error:', squareApiError)
+    }
+
     // Return test response for now
     const testResponse = {
       success: true,
@@ -79,7 +128,8 @@ serve(async (req) => {
           accessToken: !!accessToken,
           locationId: !!locationId
         }
-      }
+      },
+      squareApiTest: squareApiTest || squareApiError
     }
 
     console.log('✅ Sending test response:', JSON.stringify(testResponse, null, 2))
