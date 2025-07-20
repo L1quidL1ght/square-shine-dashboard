@@ -16,17 +16,17 @@ export function MetricCard({ title, value, change, icon, className }: MetricCard
 
   return (
     <Card className={cn(
-      "relative overflow-hidden border shadow-sm hover:shadow-md transition-all duration-200",
+      "relative overflow-hidden border shadow-sm hover:shadow-md transition-all duration-200 h-20",
       "bg-background",
       className
     )}>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
+      <CardContent className="p-3">
+        <div className="flex items-start justify-between h-full">
+          <div className="space-y-0.5">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {title}
             </p>
-            <p className="text-xl font-bold text-foreground">{value}</p>
+            <p className="text-lg font-bold text-foreground">{value}</p>
             {change !== undefined && (
               <div className="flex items-center gap-1">
                 {hasIncrease && (

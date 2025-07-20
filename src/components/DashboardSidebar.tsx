@@ -25,37 +25,37 @@ export function DashboardSidebar() {
   const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar className={isCollapsed ? "w-14" : "w-56"} collapsible="icon">
+    <Sidebar className={isCollapsed ? "w-12" : "w-48"} collapsible="icon">
       <SidebarContent className="bg-sidebar border-r border-sidebar-border">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sm font-semibold px-3 py-4 text-sidebar-foreground">
+          <SidebarGroupLabel className="text-xs font-semibold px-2 py-3 text-sidebar-foreground">
             {!isCollapsed && (
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
+                <div className="w-5 h-5 rounded bg-primary flex items-center justify-center">
                   <BarChart3 className="h-3 w-3 text-primary-foreground" />
                 </div>
-                <span className="text-xs">Restaurant Analytics</span>
+                <span className="text-xs font-medium">Analytics</span>
               </div>
             )}
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="gap-1 px-2">
+            <SidebarMenu className="gap-0.5 px-1">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className="h-9 transition-all duration-200 hover:bg-sidebar-accent/50">
+                  <SidebarMenuButton asChild className="h-8 transition-all duration-200 hover:bg-sidebar-accent/50">
                     <NavLink
                       to={item.url}
                       end
                       className={({ isActive }) =>
-                        `flex items-center gap-2 rounded-lg px-2 py-2 transition-all text-xs font-medium ${
+                        `flex items-center gap-2 rounded px-2 py-1.5 transition-all text-xs font-medium ${
                           isActive ? 
                             "bg-primary text-primary-foreground shadow-sm" : 
                             "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                         }`
                       }
                     >
-                      <item.icon className="h-4 w-4 flex-shrink-0" />
-                      {!isCollapsed && <span className="font-medium">{item.title}</span>}
+                      <item.icon className="h-3.5 w-3.5 flex-shrink-0" />
+                      {!isCollapsed && <span className="font-medium text-xs">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

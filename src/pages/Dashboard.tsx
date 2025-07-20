@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { MetricCard } from '@/components/MetricCard';
 import { PerformanceChart } from '@/components/PerformanceChart';
 import { TopItemsChart } from '@/components/TopItemsChart';
-import { Download } from 'lucide-react';
-import { subDays } from 'date-fns';
+import { Download, Calendar } from 'lucide-react';
+import { subDays, format } from 'date-fns';
 import { squareApi } from '@/services/squareApi';
 import { TeamMember, PerformanceMetrics } from '@/types/square';
 import { useToast } from '@/hooks/use-toast';
@@ -14,8 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 const Dashboard = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [selectedTeamMember, setSelectedTeamMember] = useState<string>('all');
-  const [startDate] = useState(subDays(new Date(), 7));
-  const [endDate] = useState(new Date());
+  const [startDate, setStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -38,16 +39,18 @@ const Dashboard = () => {
     setLoading(true);
     try {
       const teamMemberId = selectedTeamMember === 'all' ? undefined : selectedTeamMember;
+      const startDateTime = new Date(startDate);
+      const endDateTime = new Date(endDate);
       const orders = await squareApi.getOrdersForPeriod(
-        startDate,
-        endDate,
+        startDateTime,
+        endDateTime,
         teamMemberId
       );
       
       const calculatedMetrics = squareApi.calculatePerformanceMetrics(
         orders,
-        startDate,
-        endDate
+        startDateTime,
+        endDateTime
       );
       
       setMetrics(calculatedMetrics);
@@ -78,8 +81,8 @@ const Dashboard = () => {
       teamMember: selectedTeamMember === 'all' ? 'All Team Members' : 
         teamMembers.find(tm => tm.id === selectedTeamMember)?.given_name || 'Unknown',
       dateRange: {
-        from: startDate.toISOString(),
-        to: endDate.toISOString()
+        from: startDate,
+        to: endDate
       },
       metrics
     };
@@ -101,38 +104,36 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">Performance Dashboard</h2>
-          <p className="text-xs text-muted-foreground">
-            Track team member performance and sales metrics
-          </p>
+          <h2 className="text-base font-semibold tracking-tight text-foreground">Performance Dashboard</h2>
+          <p className="text-xs text-muted-foreground">Track team member performance and sales metrics</p>
         </div>
-        <Button onClick={handleExport} disabled={!metrics} variant="outline" size="sm">
-          <Download className="mr-2 h-3 w-3" />
+        <Button onClick={handleExport} disabled={!metrics} variant="outline" size="sm" className="h-8 text-xs">
+          <Download className="mr-1 h-3 w-3" />
           Export
         </Button>
       </div>
 
       {/* Filters */}
-      <Card className="shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">Filters</CardTitle>
-          <CardDescription className="text-xs">
-            Select team member to view performance metrics
+      <Card className="shadow-sm border">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-xs font-medium text-foreground">Filters</CardTitle>
+          <CardDescription className="text-xs text-muted-foreground">
+            Select team member and date range to view performance metrics
           </CardDescription>
         </CardHeader>
-        <CardContent className="pt-0">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
+        <CardContent className="pt-0 pb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div>
               <label className="text-xs font-medium mb-1 block text-foreground">Team Member</label>
               <Select value={selectedTeamMember} onValueChange={setSelectedTeamMember}>
-                <SelectTrigger className="h-8">
+                <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder="Select team member" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background border shadow-lg z-50">
                   <SelectItem value="all">All Team Members</SelectItem>
                   {teamMembers.map((member) => (
                     <SelectItem key={member.id} value={member.id}>
@@ -142,24 +143,47 @@ const Dashboard = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block text-foreground">Start Date</label>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="h-8 text-xs"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block text-foreground">End Date</label>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="h-8 text-xs"
+              />
+            </div>
+            <div className="flex items-end">
+              <Button onClick={loadMetrics} disabled={loading} size="sm" className="h-8 text-xs">
+                Generate Report
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Metrics Cards */}
       {loading ? (
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
-            <Card key={i} className="animate-pulse shadow-sm">
+            <Card key={i} className="animate-pulse shadow-sm border h-20">
               <CardContent className="p-3">
-                <div className="h-6 bg-muted rounded mb-1"></div>
+                <div className="h-4 bg-muted rounded mb-1"></div>
                 <div className="h-3 bg-muted rounded w-1/2"></div>
               </CardContent>
             </Card>
           ))}
         </div>
       ) : metrics ? (
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
           <MetricCard
             title="Net Sales"
             value={`$${metrics.netSales.toFixed(2)}`}
@@ -178,16 +202,16 @@ const Dashboard = () => {
           />
         </div>
       ) : (
-        <Card className="shadow-sm">
-          <CardContent className="p-4 text-center text-muted-foreground text-sm">
-            Loading performance metrics...
+        <Card className="shadow-sm border">
+          <CardContent className="p-3 text-center text-muted-foreground text-xs">
+            Select filters and click "Generate Report" to view performance metrics
           </CardContent>
         </Card>
       )}
 
       {/* Charts */}
       {metrics && (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2">
           <PerformanceChart data={metrics.dailyPerformance} />
           <TopItemsChart data={metrics.topItems} />
         </div>
