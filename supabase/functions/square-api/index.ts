@@ -84,6 +84,11 @@ serve(async (req) => {
         break;
         
       case '/locations':
+        console.log('=== LOCATIONS DEBUG ===');
+        console.log('Access token exists:', !!squareToken);
+        console.log('Access token preview:', squareToken?.substring(0, 15) + '...');
+        console.log('Making request to:', 'https://connect.squareup.com/v2/locations');
+        
         squareApiUrl = 'https://connect.squareup.com/v2/locations';
         requestOptions.method = 'GET';
         break;
@@ -94,7 +99,22 @@ serve(async (req) => {
 
     console.log('Making Square API call to:', squareApiUrl);
     const response = await fetch(squareApiUrl, requestOptions);
+    
+    // Add detailed response logging for locations endpoint
+    if (endpoint === '/locations') {
+      console.log('Locations response status:', response.status);
+      console.log('Locations response headers:', Object.fromEntries(response.headers.entries()));
+    }
+    
     const data = await response.json();
+    
+    // Add detailed data logging for locations endpoint
+    if (endpoint === '/locations') {
+      console.log('Locations response data:', JSON.stringify(data, null, 2));
+      if (!response.ok) {
+        console.error('Locations API error:', data);
+      }
+    }
     
     console.log('Square API response:', { status: response.status, data });
     
