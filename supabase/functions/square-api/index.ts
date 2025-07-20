@@ -130,6 +130,47 @@ serve(async (req) => {
           );
         }
 
+        // Get timecards for actual hours worked
+        let totalHours = 0;
+        let totalShifts = 0;
+        
+        if (performanceTeamMemberId && performanceTeamMemberId !== 'all') {
+          try {
+            const timecardsResponse = await fetch(`${SQUARE_BASE_URL}/labor/timecards/search`, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                query: {
+                  filter: {
+                    team_member_ids: [performanceTeamMemberId],
+                    start_at: {
+                      start_at: performanceStartDate,
+                      end_at: performanceEndDate
+                    }
+                  }
+                }
+              })
+            });
+            
+            if (timecardsResponse.ok) {
+              const timecardsData = await timecardsResponse.json();
+              const timecards = timecardsData.timecards || [];
+              totalShifts = timecards.length;
+              
+              totalHours = timecards.reduce((sum, timecard) => {
+                if (timecard.start_at && timecard.end_at) {
+                  const start = new Date(timecard.start_at);
+                  const end = new Date(timecard.end_at);
+                  return sum + ((end.getTime() - start.getTime()) / (1000 * 60 * 60));
+                }
+                return sum;
+              }, 0);
+            }
+          } catch (error) {
+            console.warn('Could not fetch timecards:', error.message);
+          }
+        }
+
         // Calculate performance metrics
         const netSales = performanceOrders.reduce((sum, order) => 
           sum + (order.total_money?.amount || 0), 0) / 100; // Convert cents to dollars
@@ -137,10 +178,16 @@ serve(async (req) => {
         const coverCount = performanceOrders.length;
         const ppa = coverCount > 0 ? netSales / coverCount : 0;
         
-        const startTime = new Date(performanceStartDate);
-        const endTime = new Date(performanceEndDate);
-        const hoursInPeriod = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-        const salesPerHour = hoursInPeriod > 0 ? netSales / hoursInPeriod : 0;
+        // Use actual hours worked if available, otherwise fall back to period calculation
+        let salesPerHour = 0;
+        if (totalHours > 0) {
+          salesPerHour = netSales / totalHours;
+        } else {
+          const startTime = new Date(performanceStartDate);
+          const endTime = new Date(performanceEndDate);
+          const hoursInPeriod = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+          salesPerHour = hoursInPeriod > 0 ? netSales / hoursInPeriod : 0;
+        }
 
         // Calculate daily performance
         const dailyPerformance = [];
@@ -183,6 +230,8 @@ serve(async (req) => {
           coverCount,
           ppa,
           salesPerHour,
+          totalHours,
+          totalShifts,
           dailyPerformance: dailyPerformance.sort((a, b) => a.date.localeCompare(b.date)),
           topItems,
           orderCount: performanceOrders.length,
