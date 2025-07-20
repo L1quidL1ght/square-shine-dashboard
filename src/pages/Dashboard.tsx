@@ -109,7 +109,6 @@ const Dashboard = () => {
       });
     } catch (error) {
       console.error('Failed to generate report:', error);
-      // Error handling is already done in the useEffect above
     }
   };
 
@@ -151,148 +150,150 @@ const Dashboard = () => {
   const canGenerateReport = selectedLocation && startDate && endDate;
 
   return (
-    <div className="min-h-screen w-full space-y-6 p-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Performance Dashboard</h1>
-          <p className="text-base text-muted-foreground mt-1">Track team member performance and sales metrics</p>
-        </div>
-        <Button onClick={handleExport} disabled={!metrics} variant="outline" size="lg" className="h-12 text-sm px-6">
-          <Download className="mr-2 h-4 w-4" />
-          Export Data
-        </Button>
-      </div>
-
-      {/* Filters */}
-      <Card className="shadow-md border-0 bg-card/50 backdrop-blur-sm">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-semibold text-foreground">Filters</CardTitle>
-          <CardDescription className="text-sm text-muted-foreground">
-            Select location, team member and date range to view performance metrics
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-0 pb-6">
-          <div className="flex items-center gap-6">
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block text-foreground">Location</label>
-              <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                <SelectTrigger className="h-10 text-sm">
-                  <SelectValue placeholder="Select location" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border shadow-lg z-50">
-                  {locations.map((location) => (
-                    <SelectItem key={location.id} value={location.id}>
-                      {location.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block text-foreground">Team Member</label>
-              <Select value={selectedTeamMember} onValueChange={setSelectedTeamMember}>
-                <SelectTrigger className="h-10 text-sm">
-                  <SelectValue placeholder="Select team member" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border shadow-lg z-50">
-                  <SelectItem value="all">All Team Members</SelectItem>
-                  {teamMembers.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      {member.given_name} {member.family_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <DatePresetSelector
-              startDate={startDate}
-              endDate={endDate}
-              onStartDateChange={setStartDate}
-              onEndDateChange={setEndDate}
-            />
-            
-            <div className="flex items-end">
-              <Button 
-                onClick={handleGenerateReport} 
-                disabled={isLoading || isInitialLoading || !canGenerateReport} 
-                size="lg" 
-                className="h-10 text-sm px-6"
-              >
-                {isLoading ? 'Generating...' : 'Generate Report'}
-              </Button>
-            </div>
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden">
+      <div className="space-y-6 p-4 sm:p-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Performance Dashboard</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">Track team member performance and sales metrics</p>
           </div>
-        </CardContent>
-      </Card>
+          <Button onClick={handleExport} disabled={!metrics} variant="outline" size="lg" className="w-full sm:w-auto h-12 text-sm px-6">
+            <Download className="mr-2 h-4 w-4" />
+            Export Data
+          </Button>
+        </div>
 
-      {/* Metrics Cards */}
-      {isInitialLoading ? (
-        <div className="text-center text-lg text-muted-foreground py-12">
-          Loading locations and team members...
-        </div>
-      ) : isLoading ? (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="animate-pulse shadow-md border-0 bg-card/50 backdrop-blur-sm h-32">
-              <CardContent className="p-6">
-                <div className="h-6 bg-muted rounded mb-3"></div>
-                <div className="h-4 bg-muted rounded w-1/2"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : metrics ? (
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <MetricCard
-            title="Net Sales"
-            value={`$${metrics.netSales.toFixed(2)}`}
-          />
-          <MetricCard
-            title="Cover Count"
-            value={metrics.coverCount.toString()}
-          />
-          <MetricCard
-            title="Desserts Sold"
-            value={metrics.dessertsSold?.toString() || '0'}
-          />
-          <MetricCard
-            title="Beer Sold"
-            value={metrics.beerSold?.toString() || '0'}
-          />
-          <MetricCard
-            title="Cocktails Sold"
-            value={metrics.cocktailsSold?.toString() || '0'}
-          />
-          <MetricCard
-            title="Avg Order Value"
-            value={`$${metrics.averageOrderValue?.toFixed(2) || '0.00'}`}
-          />
-        </div>
-      ) : (
+        {/* Filters */}
         <Card className="shadow-md border-0 bg-card/50 backdrop-blur-sm">
-          <CardContent className="p-8 text-center text-muted-foreground text-sm">
-            {locations.length === 0 
-              ? "⚠️ No Square locations found! Check your API credentials and permissions."
-              : !selectedLocation
-              ? "Select a location to continue"
-              : teamMembers.length === 0 && locations.length > 0 
-              ? "No team members found. Select dates and click 'Generate Report' to view performance metrics."
-              : "Select filters and click 'Generate Report' to view performance metrics"
-            }
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold text-foreground">Filters</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">
+              Select location, team member and date range to view performance metrics
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0 pb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Location</label>
+                <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                  <SelectTrigger className="h-10 text-sm w-full">
+                    <SelectValue placeholder="Select location" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    {locations.map((location) => (
+                      <SelectItem key={location.id} value={location.id}>
+                        {location.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Team Member</label>
+                <Select value={selectedTeamMember} onValueChange={setSelectedTeamMember}>
+                  <SelectTrigger className="h-10 text-sm w-full">
+                    <SelectValue placeholder="Select team member" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    <SelectItem value="all">All Team Members</SelectItem>
+                    {teamMembers.map((member) => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.given_name} {member.family_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <DatePresetSelector
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+              />
+              
+              <div className="flex items-end sm:col-span-2 lg:col-span-1">
+                <Button 
+                  onClick={handleGenerateReport} 
+                  disabled={isLoading || isInitialLoading || !canGenerateReport} 
+                  size="lg" 
+                  className="h-10 text-sm px-6 w-full"
+                >
+                  {isLoading ? 'Generating...' : 'Generate Report'}
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Charts */}
-      {metrics && (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <TeamMemberRanking data={metrics.teamMemberSales || []} />
-          <TopItemsChart data={metrics.topItems} />
-        </div>
-      )}
+        {/* Metrics Cards */}
+        {isInitialLoading ? (
+          <div className="text-center text-lg text-muted-foreground py-12">
+            Loading locations and team members...
+          </div>
+        ) : isLoading ? (
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="animate-pulse shadow-md border-0 bg-card/50 backdrop-blur-sm h-32">
+                <CardContent className="p-6">
+                  <div className="h-6 bg-muted rounded mb-3"></div>
+                  <div className="h-4 bg-muted rounded w-1/2"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : metrics ? (
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <MetricCard
+              title="Net Sales"
+              value={`$${metrics.netSales.toFixed(2)}`}
+            />
+            <MetricCard
+              title="Cover Count"
+              value={metrics.coverCount.toString()}
+            />
+            <MetricCard
+              title="Desserts Sold"
+              value={metrics.dessertsSold?.toString() || '0'}
+            />
+            <MetricCard
+              title="Beer Sold"
+              value={metrics.beerSold?.toString() || '0'}
+            />
+            <MetricCard
+              title="Cocktails Sold"
+              value={metrics.cocktailsSold?.toString() || '0'}
+            />
+            <MetricCard
+              title="Avg Order Value"
+              value={`$${metrics.averageOrderValue?.toFixed(2) || '0.00'}`}
+            />
+          </div>
+        ) : (
+          <Card className="shadow-md border-0 bg-card/50 backdrop-blur-sm">
+            <CardContent className="p-8 text-center text-muted-foreground text-sm">
+              {locations.length === 0 
+                ? "⚠️ No Square locations found! Check your API credentials and permissions."
+                : !selectedLocation
+                ? "Select a location to continue"
+                : teamMembers.length === 0 && locations.length > 0 
+                ? "No team members found. Select dates and click 'Generate Report' to view performance metrics."
+                : "Select filters and click 'Generate Report' to view performance metrics"
+              }
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Charts */}
+        {metrics && (
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+            <TeamMemberRanking data={metrics.teamMemberSales || []} />
+            <TopItemsChart data={metrics.topItems} />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

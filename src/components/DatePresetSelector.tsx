@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -67,7 +68,6 @@ export function DatePresetSelector({
         onEndDateChange(format(endOfYear(today), 'yyyy-MM-dd'));
         break;
       default:
-        // Custom - don't change dates
         break;
     }
     setSelectedPreset(preset);
@@ -75,10 +75,10 @@ export function DatePresetSelector({
 
   return (
     <>
-      <div className="flex-1">
-        <label className="text-sm font-medium mb-2 block text-foreground">Date Range</label>
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-foreground">Date Range</label>
         <Select value={selectedPreset} onValueChange={applyPreset}>
-          <SelectTrigger className="h-10 text-sm">
+          <SelectTrigger className="h-10 text-sm w-full">
             <SelectValue placeholder="Select date range" />
           </SelectTrigger>
           <SelectContent className="bg-background border shadow-lg z-50">
@@ -93,22 +93,22 @@ export function DatePresetSelector({
       
       {selectedPreset === "custom" && (
         <>
-          <div className="flex-1">
-            <label className="text-sm font-medium mb-2 block text-foreground">Start Date</label>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Start Date</label>
             <Input
               type="date"
               value={startDate}
               onChange={(e) => onStartDateChange(e.target.value)}
-              className="h-10 text-sm"
+              className="h-10 text-sm w-full"
             />
           </div>
-          <div className="flex-1">
-            <label className="text-sm font-medium mb-2 block text-foreground">End Date</label>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">End Date</label>
             <Input
               type="date"
               value={endDate}
               onChange={(e) => onEndDateChange(e.target.value)}
-              className="h-10 text-sm"
+              className="h-10 text-sm w-full"
             />
           </div>
         </>
