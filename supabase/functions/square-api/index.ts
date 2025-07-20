@@ -79,8 +79,16 @@ serve(async (req) => {
         break;
 
       case '/team-members':
-        squareApiUrl = 'https://connect.squareup.com/v2/team-members';
-        requestOptions.method = 'GET';
+        squareApiUrl = 'https://connect.squareup.com/v2/team-members/search';
+        requestOptions.method = 'POST';
+        requestOptions.body = JSON.stringify({
+          query: {
+            filter: {
+              location_ids: [locationId],
+              status: 'ACTIVE'
+            }
+          }
+        });
         break;
         
       case '/locations':
