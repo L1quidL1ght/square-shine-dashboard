@@ -42,6 +42,8 @@ export interface PerformanceMetrics {
   coverCount: number;
   ppa: number;
   salesPerHour: number;
+  totalHours?: number;
+  totalShifts?: number;
   dailyPerformance: DailyPerformance[];
   topItems: TopItem[];
 }

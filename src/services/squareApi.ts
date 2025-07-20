@@ -2,10 +2,10 @@ import { TeamMember, Order, PerformanceMetrics, DailyPerformance, TopItem } from
 import { supabase } from '@/integrations/supabase/client';
 
 class SquareApiService {
-  private async callEdgeFunction(action: string, params: any = {}) {
+  private async callEndpoint(endpoint: string, options: RequestInit = {}) {
     try {
       const { data, error } = await supabase.functions.invoke('square-api', {
-        body: { action, ...params }
+        body: { endpoint, ...options }
       });
 
       if (error) {
@@ -13,20 +13,17 @@ class SquareApiService {
         throw error;
       }
 
-      if (!data.success) {
-        throw new Error(data.error || 'Unknown error from Square API');
-      }
-
-      return data.data;
+      return data;
     } catch (error) {
-      console.error('Error calling Square API:', error);
+      console.error('Error calling Square API endpoint:', error);
       throw error;
     }
   }
 
   async getLocations() {
     try {
-      return await this.callEdgeFunction('getLocations');
+      const response = await this.callEndpoint('/locations');
+      return response.locations || [];
     } catch (error) {
       console.error('Error fetching locations:', error);
       return [];
@@ -35,21 +32,24 @@ class SquareApiService {
 
   async getTeamMembers(): Promise<TeamMember[]> {
     try {
-      return await this.callEdgeFunction('getTeamMembers');
+      const response = await this.callEndpoint('/team-members');
+      return response.teamMembers || [];
     } catch (error) {
       console.error('Error fetching team members:', error);
-      // Return empty array on error rather than mock data
       return [];
     }
   }
 
   async getOrdersForPeriod(startDate: Date, endDate: Date, teamMemberId?: string): Promise<Order[]> {
     try {
-      return await this.callEdgeFunction('getOrders', {
+      const params = new URLSearchParams({
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
-        teamMemberId
+        ...(teamMemberId && { teamMemberId })
       });
+      
+      const response = await this.callEndpoint(`/orders?${params.toString()}`);
+      return response.orders || [];
     } catch (error) {
       console.error('Error fetching orders:', error);
       return [];
@@ -58,14 +58,28 @@ class SquareApiService {
 
   async getPerformanceMetrics(startDate: Date, endDate: Date, teamMemberId?: string): Promise<PerformanceMetrics> {
     try {
-      return await this.callEdgeFunction('calculatePerformance', {
-        performanceStartDate: startDate.toISOString(),
-        performanceEndDate: endDate.toISOString(),
-        performanceTeamMemberId: teamMemberId
+      const response = await this.callEndpoint('/performance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teamMemberId: teamMemberId || 'all',
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString()
+        })
       });
+      
+      return {
+        netSales: response.netSales || 0,
+        coverCount: response.coverCount || 0,
+        ppa: response.ppa || 0,
+        salesPerHour: response.salesPerHour || 0,
+        totalHours: response.totalHours || 0,
+        totalShifts: response.totalShifts || 0,
+        dailyPerformance: response.dailyPerformance || [],
+        topItems: response.topItems || []
+      };
     } catch (error) {
       console.error('Error calculating performance metrics:', error);
-      // Return empty metrics on error
       return {
         netSales: 0,
         coverCount: 0,
