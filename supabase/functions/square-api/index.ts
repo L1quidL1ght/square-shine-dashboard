@@ -1,18 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
+};
+
 serve(async (req) => {
   console.log('=== Edge Function Called ===');
   
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     console.log('CORS preflight request');
-    return new Response('ok', { 
-      headers: { 
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE'
-      } 
-    });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
@@ -99,9 +99,9 @@ serve(async (req) => {
       status: response.status
     }), {
       status: 200,
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        ...corsHeaders
       }
     });
 
@@ -116,7 +116,7 @@ serve(async (req) => {
       status: 200, // Return 200 so we can see the error details
       headers: { 
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        ...corsHeaders
       }
     });
   }
