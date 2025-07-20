@@ -51,18 +51,28 @@ serve(async (req) => {
         break;
 
       case '/team-members':
-        const teamMembersResponse = await fetch(`${SQUARE_BASE_URL}/team-members`, {
-          method: 'GET',
-          headers
+        const teamMembersResponse = await fetch(`${SQUARE_BASE_URL}/team-members/search`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            query: {
+              filter: {
+                location_ids: [locationId],
+                status: 'ACTIVE'
+              }
+            }
+          })
         });
         const teamMembersData = await teamMembersResponse.json();
-        // Filter active team members for the specified location
-        const filteredMembers = teamMembersData.team_members?.filter(member => 
-          member.status === 'ACTIVE' && 
-          (!member.assigned_locations?.length || member.assigned_locations.includes(locationId))
-        ) || [];
+        console.log('Team members API response:', teamMembersData);
+        
         result = {
-          teamMembers: filteredMembers
+          teamMembers: teamMembersData.team_members?.map(member => ({
+            id: member.id,
+            name: `${member.given_name || ''} ${member.family_name || ''}`.trim(),
+            role: member.assigned_locations?.[0]?.job_title || 'Team Member',
+            status: member.status
+          })) || []
         };
         break;
 
