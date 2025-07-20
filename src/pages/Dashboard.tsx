@@ -13,52 +13,69 @@ import { TeamMember, PerformanceMetrics } from '@/types/square';
 import { useToast } from '@/hooks/use-toast';
 
 const Dashboard = () => {
+  const [locations, setLocations] = useState<any[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [selectedTeamMember, setSelectedTeamMember] = useState<string>('all');
   const [startDate, setStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingInitial, setLoadingInitial] = useState(true);
   const { toast } = useToast();
 
-  const loadTeamMembers = async () => {
+  const loadInitialData = async () => {
+    setLoadingInitial(true);
     try {
-      const members = await squareApi.getTeamMembers();
-      setTeamMembers(members);
+      // Load locations and team members in parallel
+      const [locationsData, teamMembersData] = await Promise.all([
+        squareApi.getLocations(),
+        squareApi.getTeamMembers()
+      ]);
+      
+      setLocations(locationsData);
+      setTeamMembers(teamMembersData);
+      
+      if (locationsData.length > 0) {
+        console.log('Available locations:', locationsData);
+      }
+      if (teamMembersData.length === 0) {
+        toast({
+          title: "Info",
+          description: "No team members found. This is normal if you don't use Square's team member feature.",
+        });
+      }
     } catch (error) {
-      console.error('Failed to load team members:', error);
+      console.error('Failed to load initial data:', error);
       toast({
         title: "Error",
-        description: "Failed to load team members",
+        description: "Failed to load locations and team members",
         variant: "destructive",
       });
+    } finally {
+      setLoadingInitial(false);
     }
   };
 
-  const loadMetrics = async () => {
+  const generateReport = async () => {
     setLoading(true);
     try {
       const teamMemberId = selectedTeamMember === 'all' ? undefined : selectedTeamMember;
       const startDateTime = new Date(startDate);
       const endDateTime = new Date(endDate);
-      const orders = await squareApi.getOrdersForPeriod(
+      
+      // Use the new server-side performance calculation
+      const calculatedMetrics = await squareApi.getPerformanceMetrics(
         startDateTime,
         endDateTime,
         teamMemberId
       );
       
-      const calculatedMetrics = squareApi.calculatePerformanceMetrics(
-        orders,
-        startDateTime,
-        endDateTime
-      );
-      
       setMetrics(calculatedMetrics);
     } catch (error) {
-      console.error('Failed to load metrics:', error);
+      console.error('Failed to generate report:', error);
       toast({
         title: "Error",
-        description: "Failed to load performance metrics",
+        description: "Failed to generate performance report",
         variant: "destructive",
       });
     } finally {
@@ -67,12 +84,10 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    loadTeamMembers();
+    loadInitialData();
   }, []);
 
-  useEffect(() => {
-    loadMetrics();
-  }, [selectedTeamMember, startDate, endDate]);
+  // Remove automatic loading on filter changes - now manual with Generate Report button
 
   const handleExport = () => {
     if (!metrics) return;
@@ -162,8 +177,13 @@ const Dashboard = () => {
               />
             </div>
             <div className="flex items-end">
-              <Button onClick={loadMetrics} disabled={loading} size="sm" className="h-8 text-xs">
-                Generate Report
+              <Button 
+                onClick={generateReport} 
+                disabled={loading || loadingInitial} 
+                size="sm" 
+                className="h-8 text-xs"
+              >
+                {loading ? 'Generating...' : 'Generate Report'}
               </Button>
             </div>
           </div>
@@ -171,7 +191,11 @@ const Dashboard = () => {
       </Card>
 
       {/* Metrics Cards */}
-      {loading ? (
+      {loadingInitial ? (
+        <div className="text-center text-sm text-muted-foreground py-8">
+          Loading locations and team members...
+        </div>
+      ) : loading ? (
         <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
             <Card key={i} className="animate-pulse shadow-sm border h-20">
@@ -204,7 +228,10 @@ const Dashboard = () => {
       ) : (
         <Card className="shadow-sm border">
           <CardContent className="p-3 text-center text-muted-foreground text-xs">
-            Select filters and click "Generate Report" to view performance metrics
+            {teamMembers.length === 0 && locations.length > 0 
+              ? "No team members found. Select dates and click 'Generate Report' to view performance metrics."
+              : "Select filters and click 'Generate Report' to view performance metrics"
+            }
           </CardContent>
         </Card>
       )}

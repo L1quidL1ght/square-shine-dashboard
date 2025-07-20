@@ -56,9 +56,35 @@ class SquareApiService {
     }
   }
 
+  async getPerformanceMetrics(startDate: Date, endDate: Date, teamMemberId?: string): Promise<PerformanceMetrics> {
+    try {
+      return await this.callEdgeFunction('calculatePerformance', {
+        performanceStartDate: startDate.toISOString(),
+        performanceEndDate: endDate.toISOString(),
+        performanceTeamMemberId: teamMemberId
+      });
+    } catch (error) {
+      console.error('Error calculating performance metrics:', error);
+      // Return empty metrics on error
+      return {
+        netSales: 0,
+        coverCount: 0,
+        ppa: 0,
+        salesPerHour: 0,
+        dailyPerformance: [],
+        topItems: []
+      };
+    }
+  }
+
+  // Legacy method for compatibility - client-side calculation
+
   calculatePerformanceMetrics(orders: Order[], startDate: Date, endDate: Date): PerformanceMetrics {
+    // This method is kept for compatibility but real calculation now happens server-side
+    console.warn('Using legacy client-side calculation. Consider using calculatePerformanceMetrics() instead.');
+    
     const netSales = orders.reduce((sum, order) => 
-      sum + (order.total_money?.amount || 0), 0) / 100; // Convert cents to dollars
+      sum + (order.total_money?.amount || 0), 0) / 100;
 
     const coverCount = orders.length;
     const ppa = coverCount > 0 ? netSales / coverCount : 0;
@@ -66,7 +92,6 @@ class SquareApiService {
     const hoursInPeriod = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
     const salesPerHour = hoursInPeriod > 0 ? netSales / hoursInPeriod : 0;
 
-    // Calculate daily performance
     const dailyPerformance: DailyPerformance[] = [];
     const dailyMap = new Map<string, { sales: number; covers: number }>();
 
@@ -86,7 +111,6 @@ class SquareApiService {
       });
     });
 
-    // Calculate top items
     const itemMap = new Map<string, { quantity: number; revenue: number }>();
     orders.forEach(order => {
       order.line_items?.forEach(item => {
