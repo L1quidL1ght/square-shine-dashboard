@@ -1,95 +1,46 @@
 import { TeamMember, Order, PerformanceMetrics, DailyPerformance, TopItem } from '@/types/square';
-
-const SQUARE_BASE_URL = 'https://connect.squareup.com/v2';
-
-// Mock data for development - replace with actual API calls
-const mockTeamMembers: TeamMember[] = [
-  { id: '1', given_name: 'John', family_name: 'Smith', email: 'john@restaurant.com', status: 'ACTIVE' },
-  { id: '2', given_name: 'Sarah', family_name: 'Johnson', email: 'sarah@restaurant.com', status: 'ACTIVE' },
-  { id: '3', given_name: 'Mike', family_name: 'Brown', email: 'mike@restaurant.com', status: 'ACTIVE' },
-  { id: '4', given_name: 'Lisa', family_name: 'Davis', email: 'lisa@restaurant.com', status: 'ACTIVE' },
-];
-
-const mockOrders: Order[] = [
-  {
-    id: '1',
-    created_at: '2024-01-15T12:30:00Z',
-    total_money: { amount: 2450, currency: 'USD' },
-    line_items: [
-      { name: 'Chicken Caesar Salad', quantity: '2', total_money: { amount: 1600, currency: 'USD' } },
-      { name: 'Iced Tea', quantity: '2', total_money: { amount: 600, currency: 'USD' } },
-      { name: 'Chocolate Cake', quantity: '1', total_money: { amount: 250, currency: 'USD' } },
-    ],
-    fulfillments: [{ type: 'PICKUP', state: 'COMPLETED', fulfillment_entries: [{ team_member_id: '1' }] }]
-  },
-  // Add more mock orders...
-];
+import { supabase } from '@/integrations/supabase/client';
 
 class SquareApiService {
-  private accessToken: string;
-  private applicationId: string;
+  private async callEdgeFunction(action: string, params: any = {}) {
+    try {
+      const { data, error } = await supabase.functions.invoke('square-api', {
+        body: { action, ...params }
+      });
 
-  constructor() {
-    // Using mock values for development - in production, these would come from secure backend
-    this.accessToken = 'mock_token';
-    this.applicationId = 'mock_app_id';
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Unknown error from Square API');
+      }
+
+      return data.data;
+    } catch (error) {
+      console.error('Error calling Square API:', error);
+      throw error;
+    }
   }
 
   async getTeamMembers(): Promise<TeamMember[]> {
     try {
-      // For now, return mock data. In production, replace with actual API call:
-      // const response = await fetch(`${SQUARE_BASE_URL}/team-members`, {
-      //   headers: {
-      //     'Authorization': `Bearer ${this.accessToken}`,
-      //     'Square-Version': '2023-10-18',
-      //     'Content-Type': 'application/json'
-      //   }
-      // });
-      // const data = await response.json();
-      // return data.team_members || [];
-      
-      return mockTeamMembers;
+      return await this.callEdgeFunction('getTeamMembers');
     } catch (error) {
       console.error('Error fetching team members:', error);
-      return mockTeamMembers;
+      // Return empty array on error rather than mock data
+      return [];
     }
   }
 
   async getOrdersForPeriod(startDate: Date, endDate: Date, teamMemberId?: string): Promise<Order[]> {
     try {
-      // For now, return mock data. In production, replace with actual API call:
-      // const response = await fetch(`${SQUARE_BASE_URL}/orders/search`, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Authorization': `Bearer ${this.accessToken}`,
-      //     'Square-Version': '2023-10-18',
-      //     'Content-Type': 'application/json'
-      //   },
-      //   body: JSON.stringify({
-      //     filter: {
-      //       date_time_filter: {
-      //         created_at: {
-      //           start_at: startDate.toISOString(),
-      //           end_at: endDate.toISOString()
-      //         }
-      //       }
-      //     }
-      //   })
-      // });
-      // const data = await response.json();
-      // return data.orders || [];
-
-      // Filter mock orders by team member if specified
-      let filteredOrders = mockOrders;
-      if (teamMemberId) {
-        filteredOrders = mockOrders.filter(order => 
-          order.fulfillments?.some(f => 
-            f.fulfillment_entries?.some(e => e.team_member_id === teamMemberId)
-          )
-        );
-      }
-      
-      return filteredOrders;
+      return await this.callEdgeFunction('getOrders', {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        teamMemberId
+      });
     } catch (error) {
       console.error('Error fetching orders:', error);
       return [];
