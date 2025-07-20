@@ -1,1 +1,4 @@
 project_id = "gtpqdakpaxovrcqkbnui"
+
+[functions.square-api]
+verify_jwt = false

@@ -77,6 +77,16 @@ serve(async (req) => {
           }
         });
         break;
+
+      case '/team-members':
+        squareApiUrl = 'https://connect.squareup.com/v2/team-members';
+        requestOptions.method = 'GET';
+        break;
+        
+      case '/locations':
+        squareApiUrl = 'https://connect.squareup.com/v2/locations';
+        requestOptions.method = 'GET';
+        break;
         
       default:
         throw new Error(`Unsupported endpoint: ${endpoint}`);
