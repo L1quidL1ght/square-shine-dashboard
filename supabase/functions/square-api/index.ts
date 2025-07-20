@@ -98,6 +98,17 @@ serve(async (req) => {
     
     console.log('Square API response:', { status: response.status, data });
     
+    // Add detailed logging for locations endpoint
+    if (endpoint === '/locations') {
+      console.log('=== LOCATIONS DEBUG ===');
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      console.log('Locations data:', JSON.stringify(data, null, 2));
+      console.log('Number of locations found:', data.locations?.length || 0);
+      console.log('Environment SQUARE_LOCATION_ID:', locationId);
+      console.log('=======================');
+    }
+    
     return new Response(JSON.stringify({
       success: response.ok,
       data: data,

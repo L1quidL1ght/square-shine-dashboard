@@ -18,6 +18,7 @@ import {
 } from '@/hooks/useSquareData';
 
 const Dashboard = () => {
+  const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [selectedTeamMember, setSelectedTeamMember] = useState<string>('all');
   const [startDate, setStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -79,6 +80,13 @@ const Dashboard = () => {
     }
   }, [locationsError, teamMembersError, metricsError, toast]);
 
+  // Auto-select location if only one available
+  React.useEffect(() => {
+    if (!locationsLoading && locations.length === 1 && !selectedLocation) {
+      setSelectedLocation(locations[0].id);
+    }
+  }, [locations, locationsLoading, selectedLocation]);
+
   // Show info toast for empty team members
   React.useEffect(() => {
     if (!teamMembersLoading && teamMembers.length === 0 && locations.length > 0) {
@@ -136,9 +144,10 @@ const Dashboard = () => {
   // Reset metrics fetch flag when filters change
   React.useEffect(() => {
     setShouldFetchMetrics(false);
-  }, [selectedTeamMember, startDate, endDate]);
+  }, [selectedLocation, selectedTeamMember, startDate, endDate]);
 
   const isLoading = generateMetricsMutation.isPending || metricsFetching;
+  const canGenerateReport = selectedLocation && startDate && endDate;
 
   return (
     <div className="space-y-3">
@@ -159,11 +168,26 @@ const Dashboard = () => {
         <CardHeader className="pb-2">
           <CardTitle className="text-xs font-medium text-foreground">Filters</CardTitle>
           <CardDescription className="text-xs text-muted-foreground">
-            Select team member and date range to view performance metrics
+            Select location, team member and date range to view performance metrics
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-0 pb-3">
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+            <div>
+              <label className="text-xs font-medium mb-1 block text-foreground">Location</label>
+              <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Select location" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border shadow-lg z-50">
+                  {locations.map((location) => (
+                    <SelectItem key={location.id} value={location.id}>
+                      {location.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <label className="text-xs font-medium mb-1 block text-foreground">Team Member</label>
               <Select value={selectedTeamMember} onValueChange={setSelectedTeamMember}>
@@ -201,7 +225,7 @@ const Dashboard = () => {
             <div className="flex items-end">
               <Button 
                 onClick={handleGenerateReport} 
-                disabled={isLoading || isInitialLoading} 
+                disabled={isLoading || isInitialLoading || !canGenerateReport} 
                 size="sm" 
                 className="h-8 text-xs"
               >
@@ -250,7 +274,11 @@ const Dashboard = () => {
       ) : (
         <Card className="shadow-sm border">
           <CardContent className="p-3 text-center text-muted-foreground text-xs">
-            {teamMembers.length === 0 && locations.length > 0 
+            {locations.length === 0 
+              ? "⚠️ No Square locations found! Check your API credentials and permissions."
+              : !selectedLocation
+              ? "Select a location to continue"
+              : teamMembers.length === 0 && locations.length > 0 
               ? "No team members found. Select dates and click 'Generate Report' to view performance metrics."
               : "Select filters and click 'Generate Report' to view performance metrics"
             }
