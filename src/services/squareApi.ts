@@ -21,70 +21,56 @@ class SquareApiService {
   }
 
   async getLocations() {
-    try {
-      const result = await this.callEdgeFunction('/locations');
-      return result.locations || [];
-    } catch (error) {
-      console.error('Error fetching locations:', error);
-      return [];
-    }
+    const result = await this.callEdgeFunction('/locations');
+    const locations = result.locations || [];
+    console.log(`✅ Square API: Loaded ${locations.length} locations`);
+    return locations;
   }
 
   async getTeamMembers(): Promise<TeamMember[]> {
-    try {
-      const result = await this.callEdgeFunction('/team-members');
-      return result.teamMembers || [];
-    } catch (error) {
-      console.error('Error fetching team members:', error);
-      return [];
-    }
+    const result = await this.callEdgeFunction('/team-members');
+    const teamMembers = result.teamMembers || [];
+    console.log(`✅ Square API: Loaded ${teamMembers.length} team members`);
+    return teamMembers;
   }
 
   async getOrdersForPeriod(startDate: Date, endDate: Date, teamMemberId?: string): Promise<Order[]> {
-    try {
-      const params = new URLSearchParams({
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        ...(teamMemberId && { teamMemberId })
-      });
-      
-      const result = await this.callEdgeFunction(`/orders?${params.toString()}`);
-      return result.orders || [];
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-      return [];
-    }
+    const startTime = Date.now();
+    const params = new URLSearchParams({
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      ...(teamMemberId && { teamMemberId })
+    });
+    
+    const result = await this.callEdgeFunction(`/orders?${params.toString()}`);
+    const orders = result.orders || [];
+    const duration = Date.now() - startTime;
+    console.log(`✅ Square API: Loaded ${orders.length} orders in ${duration}ms`);
+    return orders;
   }
 
   async getPerformanceMetrics(startDate: Date, endDate: Date, teamMemberId?: string): Promise<PerformanceMetrics> {
-    try {
-      const result = await this.callEdgeFunction('/performance', {
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        teamMemberId
-      });
-      
-      return {
-        netSales: result.netSales || 0,
-        coverCount: result.coverCount || 0,
-        ppa: result.ppa || 0,
-        salesPerHour: result.salesPerHour || 0,
-        totalHours: result.totalHours || 0,
-        totalShifts: result.totalShifts || 0,
-        dailyPerformance: result.dailyPerformance || [],
-        topItems: result.topItems || []
-      };
-    } catch (error) {
-      console.error('Error calculating performance metrics:', error);
-      return {
-        netSales: 0,
-        coverCount: 0,
-        ppa: 0,
-        salesPerHour: 0,
-        dailyPerformance: [],
-        topItems: []
-      };
-    }
+    const startTime = Date.now();
+    const result = await this.callEdgeFunction('/performance', {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      teamMemberId
+    });
+    
+    const duration = Date.now() - startTime;
+    const metrics = {
+      netSales: result.netSales || 0,
+      coverCount: result.coverCount || 0,
+      ppa: result.ppa || 0,
+      salesPerHour: result.salesPerHour || 0,
+      totalHours: result.totalHours || 0,
+      totalShifts: result.totalShifts || 0,
+      dailyPerformance: result.dailyPerformance || [],
+      topItems: result.topItems || []
+    };
+    
+    console.log(`✅ Square API: Generated performance metrics in ${duration}ms - $${metrics.netSales.toFixed(2)} sales, ${metrics.coverCount} covers`);
+    return metrics;
   }
 
   // Legacy method for compatibility - client-side calculation

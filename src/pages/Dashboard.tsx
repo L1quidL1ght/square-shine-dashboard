@@ -54,8 +54,8 @@ const Dashboard = () => {
     if (locationsError) {
       console.error('Failed to load locations:', locationsError);
       toast({
-        title: "Error",
-        description: "Failed to load locations",
+        title: "Square API Error",
+        description: "Failed to load Square locations - check API credentials",
         variant: "destructive",
       });
     }
@@ -63,8 +63,8 @@ const Dashboard = () => {
     if (teamMembersError) {
       console.error('Failed to load team members:', teamMembersError);
       toast({
-        title: "Error",
-        description: "Failed to load team members",
+        title: "Team Members Error",
+        description: "Failed to load team members - report generation will still work",
         variant: "destructive",
       });
     }
@@ -72,8 +72,8 @@ const Dashboard = () => {
     if (metricsError) {
       console.error('Failed to load performance metrics:', metricsError);
       toast({
-        title: "Error",
-        description: "Failed to generate performance report",
+        title: "Sales Data Error",
+        description: "Failed to load sales data - check date range and Square permissions",
         variant: "destructive",
       });
     }
