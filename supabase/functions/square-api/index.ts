@@ -137,6 +137,33 @@ serve(async (req) => {
       console.log('=======================');
     }
     
+    // Filter team members to show only servers
+    if (endpoint === '/team-members' && response.ok && data.team_members) {
+      console.log('=== TEAM MEMBERS FILTERING ===');
+      console.log('Total team members before filtering:', data.team_members.length);
+      
+      const serversOnly = data.team_members.filter(member => {
+        // Check if any job assignment includes "Server" in the job title
+        const hasServerRole = member.wage_setting?.job_assignments?.some(job => 
+          job.job_title?.toLowerCase().includes('server')
+        );
+        
+        if (hasServerRole) {
+          console.log(`✅ Server found: ${member.given_name} ${member.family_name} - Roles: ${
+            member.wage_setting?.job_assignments?.map(j => j.job_title).join(', ') || 'None'
+          }`);
+        }
+        
+        return hasServerRole;
+      });
+      
+      console.log('Servers found:', serversOnly.length);
+      console.log('================================');
+      
+      // Replace the team_members array with filtered results
+      data.team_members = serversOnly;
+    }
+    
     return new Response(JSON.stringify({
       success: response.ok,
       data: data,
