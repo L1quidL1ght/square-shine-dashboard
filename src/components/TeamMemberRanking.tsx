@@ -27,18 +27,18 @@ export function TeamMemberRanking({ data }: TeamMemberRankingProps) {
     }));
 
   return (
-    <Card className="border-0 shadow-lg bg-card/50 backdrop-blur-sm hover:shadow-xl transition-all duration-300 animate-scale-in">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-xl font-bold">Team Member Sales Ranking</CardTitle>
+    <Card className="border-0 shadow-md bg-card/50 backdrop-blur-sm hover:shadow-lg transition-all duration-300 animate-scale-in">
+      <CardHeader className="pb-6">
+        <CardTitle className="text-2xl font-bold">Team Member Sales Ranking</CardTitle>
         <CardDescription className="text-base">Top performing team members by net sales</CardDescription>
       </CardHeader>
       <CardContent>
         {filteredData.length === 0 ? (
-          <div className="text-center text-muted-foreground py-8">
+          <div className="text-center text-muted-foreground py-12 text-base">
             No sales data available for selected period
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={350}>
+          <ResponsiveContainer width="100%" height={400}>
             <BarChart 
               data={filteredData} 
               margin={{ top: 20, right: 30, left: 20, bottom: 60 }}

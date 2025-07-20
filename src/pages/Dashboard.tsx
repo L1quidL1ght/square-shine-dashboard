@@ -151,33 +151,33 @@ const Dashboard = () => {
   const canGenerateReport = selectedLocation && startDate && endDate;
 
   return (
-    <div className="space-y-3">
+    <div className="min-h-screen w-full space-y-6 p-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
         <div>
-          <h2 className="text-base font-semibold tracking-tight text-foreground">Performance Dashboard</h2>
-          <p className="text-xs text-muted-foreground">Track team member performance and sales metrics</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Performance Dashboard</h1>
+          <p className="text-base text-muted-foreground mt-1">Track team member performance and sales metrics</p>
         </div>
-        <Button onClick={handleExport} disabled={!metrics} variant="outline" size="sm" className="h-8 text-xs">
-          <Download className="mr-1 h-3 w-3" />
-          Export
+        <Button onClick={handleExport} disabled={!metrics} variant="outline" size="lg" className="h-12 text-sm px-6">
+          <Download className="mr-2 h-4 w-4" />
+          Export Data
         </Button>
       </div>
 
       {/* Filters */}
-      <Card className="shadow-sm border">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs font-medium text-foreground">Filters</CardTitle>
-          <CardDescription className="text-xs text-muted-foreground">
+      <Card className="shadow-md border-0 bg-card/50 backdrop-blur-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold text-foreground">Filters</CardTitle>
+          <CardDescription className="text-sm text-muted-foreground">
             Select location, team member and date range to view performance metrics
           </CardDescription>
         </CardHeader>
-        <CardContent className="pt-0 pb-3">
-          <div className="grid grid-cols-1 sm:grid-cols-6 gap-3">
-            <div>
-              <label className="text-xs font-medium mb-1 block text-foreground">Location</label>
+        <CardContent className="pt-0 pb-6">
+          <div className="flex items-center gap-6">
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-2 block text-foreground">Location</label>
               <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                <SelectTrigger className="h-8 text-xs">
+                <SelectTrigger className="h-10 text-sm">
                   <SelectValue placeholder="Select location" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border shadow-lg z-50">
@@ -189,10 +189,11 @@ const Dashboard = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <label className="text-xs font-medium mb-1 block text-foreground">Team Member</label>
+            
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-2 block text-foreground">Team Member</label>
               <Select value={selectedTeamMember} onValueChange={setSelectedTeamMember}>
-                <SelectTrigger className="h-8 text-xs">
+                <SelectTrigger className="h-10 text-sm">
                   <SelectValue placeholder="Select team member" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border shadow-lg z-50">
@@ -205,18 +206,20 @@ const Dashboard = () => {
                 </SelectContent>
               </Select>
             </div>
+            
             <DatePresetSelector
               startDate={startDate}
               endDate={endDate}
               onStartDateChange={setStartDate}
               onEndDateChange={setEndDate}
             />
+            
             <div className="flex items-end">
               <Button 
                 onClick={handleGenerateReport} 
                 disabled={isLoading || isInitialLoading || !canGenerateReport} 
-                size="sm" 
-                className="h-8 text-xs"
+                size="lg" 
+                className="h-10 text-sm px-6"
               >
                 {isLoading ? 'Generating...' : 'Generate Report'}
               </Button>
@@ -227,22 +230,22 @@ const Dashboard = () => {
 
       {/* Metrics Cards */}
       {isInitialLoading ? (
-        <div className="text-center text-sm text-muted-foreground py-8">
+        <div className="text-center text-lg text-muted-foreground py-12">
           Loading locations and team members...
         </div>
       ) : isLoading ? (
-        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {[...Array(6)].map((_, i) => (
-            <Card key={i} className="animate-pulse shadow-sm border h-20">
-              <CardContent className="p-3">
-                <div className="h-4 bg-muted rounded mb-1"></div>
-                <div className="h-3 bg-muted rounded w-1/2"></div>
+            <Card key={i} className="animate-pulse shadow-md border-0 bg-card/50 backdrop-blur-sm h-32">
+              <CardContent className="p-6">
+                <div className="h-6 bg-muted rounded mb-3"></div>
+                <div className="h-4 bg-muted rounded w-1/2"></div>
               </CardContent>
             </Card>
           ))}
         </div>
       ) : metrics ? (
-        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <MetricCard
             title="Net Sales"
             value={`$${metrics.netSales.toFixed(2)}`}
@@ -269,8 +272,8 @@ const Dashboard = () => {
           />
         </div>
       ) : (
-        <Card className="shadow-sm border">
-          <CardContent className="p-3 text-center text-muted-foreground text-xs">
+        <Card className="shadow-md border-0 bg-card/50 backdrop-blur-sm">
+          <CardContent className="p-8 text-center text-muted-foreground text-sm">
             {locations.length === 0 
               ? "⚠️ No Square locations found! Check your API credentials and permissions."
               : !selectedLocation
@@ -285,7 +288,7 @@ const Dashboard = () => {
 
       {/* Charts */}
       {metrics && (
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2">
           <TeamMemberRanking data={metrics.teamMemberSales || []} />
           <TopItemsChart data={metrics.topItems} />
         </div>

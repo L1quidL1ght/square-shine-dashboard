@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 
 interface DatePresetSelectorProps {
@@ -14,12 +13,12 @@ interface DatePresetSelectorProps {
 const datePresets = [
   { label: "Today", value: "today" },
   { label: "Yesterday", value: "yesterday" }, 
-  { label: "This week", value: "thisWeek" },
-  { label: "Last week", value: "lastWeek" },
-  { label: "This month", value: "thisMonth" },
-  { label: "Last month", value: "lastMonth" },
-  { label: "This year", value: "thisYear" },
-  { label: "Custom", value: "custom" }
+  { label: "This Week", value: "thisWeek" },
+  { label: "Last Week", value: "lastWeek" },
+  { label: "This Month", value: "thisMonth" },
+  { label: "Last Month", value: "lastMonth" },
+  { label: "This Year", value: "thisYear" },
+  { label: "Custom Range", value: "custom" }
 ];
 
 export function DatePresetSelector({ 
@@ -75,11 +74,11 @@ export function DatePresetSelector({
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      <div>
-        <label className="text-xs font-medium mb-1 block text-foreground">Date Range</label>
+    <>
+      <div className="flex-1">
+        <label className="text-sm font-medium mb-2 block text-foreground">Date Range</label>
         <Select value={selectedPreset} onValueChange={applyPreset}>
-          <SelectTrigger className="h-8 text-xs">
+          <SelectTrigger className="h-10 text-sm">
             <SelectValue placeholder="Select date range" />
           </SelectTrigger>
           <SelectContent className="bg-background border shadow-lg z-50">
@@ -94,34 +93,26 @@ export function DatePresetSelector({
       
       {selectedPreset === "custom" && (
         <>
-          <div>
-            <label className="text-xs font-medium mb-1 block text-foreground">Start Date</label>
+          <div className="flex-1">
+            <label className="text-sm font-medium mb-2 block text-foreground">Start Date</label>
             <Input
               type="date"
               value={startDate}
               onChange={(e) => onStartDateChange(e.target.value)}
-              className="h-8 text-xs"
+              className="h-10 text-sm"
             />
           </div>
-          <div>
-            <label className="text-xs font-medium mb-1 block text-foreground">End Date</label>
+          <div className="flex-1">
+            <label className="text-sm font-medium mb-2 block text-foreground">End Date</label>
             <Input
               type="date"
               value={endDate}
               onChange={(e) => onEndDateChange(e.target.value)}
-              className="h-8 text-xs"
+              className="h-10 text-sm"
             />
           </div>
         </>
       )}
-      
-      {selectedPreset !== "custom" && (
-        <div className="col-span-2 flex items-end">
-          <div className="text-xs text-muted-foreground">
-            {format(new Date(startDate), 'MMM d, yyyy')} - {format(new Date(endDate), 'MMM d, yyyy')}
-          </div>
-        </div>
-      )}
-    </div>
+    </>
   );
 }

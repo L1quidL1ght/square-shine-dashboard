@@ -29,13 +29,13 @@ export function TopItemsChart({ data }: TopItemsChartProps) {
   }));
 
   return (
-    <Card className="border-0 shadow-lg bg-card/50 backdrop-blur-sm hover:shadow-xl transition-all duration-300 animate-scale-in">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-xl font-bold">Top Items by Revenue</CardTitle>
-        <CardDescription className="text-base">Best performing menu items</CardDescription>
+    <Card className="border-0 shadow-md bg-card/50 backdrop-blur-sm hover:shadow-lg transition-all duration-300 animate-scale-in">
+      <CardHeader className="pb-6">
+        <CardTitle className="text-2xl font-bold">Top Selling Items</CardTitle>
+        <CardDescription className="text-base">Best performing menu items by revenue</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
+        <ResponsiveContainer width="100%" height={400}>
           <PieChart>
             <Pie
               data={chartData}

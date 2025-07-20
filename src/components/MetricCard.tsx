@@ -11,44 +11,41 @@ interface MetricCardProps {
 }
 
 export function MetricCard({ title, value, change, icon, className }: MetricCardProps) {
-  const hasIncrease = change !== undefined && change > 0;
-  const hasDecrease = change !== undefined && change < 0;
-
   return (
     <Card className={cn(
-      "relative overflow-hidden border shadow-sm hover:shadow-md transition-all duration-200 h-20",
-      "bg-background",
+      "border-0 shadow-md bg-card/50 backdrop-blur-sm hover:shadow-lg transition-all duration-300 animate-scale-in",
       className
     )}>
-      <CardContent className="p-3">
-        <div className="flex items-start justify-between h-full">
-          <div className="space-y-0.5">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              {title}
-            </p>
-            <p className="text-lg font-bold text-foreground">{value}</p>
-            {change !== undefined && (
-              <div className="flex items-center gap-1">
-                {hasIncrease && (
-                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-metric-increase/10 text-metric-increase">
-                    <TrendingUp className="h-2.5 w-2.5" />
-                    <span className="text-xs font-medium">
-                      +{Math.abs(change).toFixed(1)}%
-                    </span>
-                  </div>
-                )}
-                {hasDecrease && (
-                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-metric-decrease/10 text-metric-decrease">
-                    <TrendingDown className="h-2.5 w-2.5" />
-                    <span className="text-xs font-medium">
-                      -{Math.abs(change).toFixed(1)}%
-                    </span>
-                  </div>
-                )}
-                <span className="text-xs text-muted-foreground ml-1">vs last period</span>
-              </div>
-            )}
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between space-y-0 pb-3">
+          <div className="text-sm font-medium text-muted-foreground">
+            {title}
           </div>
+          {icon && (
+            <div className="h-5 w-5 text-muted-foreground">
+              {icon}
+            </div>
+          )}
+        </div>
+        <div className="space-y-1">
+          <div className="text-3xl font-bold text-foreground">
+            {value}
+          </div>
+          {change !== undefined && (
+            <div className="flex items-center space-x-1">
+              {change > 0 ? (
+                <TrendingUp className="h-4 w-4 text-emerald-500" />
+              ) : change < 0 ? (
+                <TrendingDown className="h-4 w-4 text-red-500" />
+              ) : null}
+              <span className={cn(
+                "text-sm font-medium",
+                change > 0 ? "text-emerald-500" : change < 0 ? "text-red-500" : "text-muted-foreground"
+              )}>
+                {change > 0 ? '+' : ''}{change}%
+              </span>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
