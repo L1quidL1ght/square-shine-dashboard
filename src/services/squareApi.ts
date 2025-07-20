@@ -22,14 +22,16 @@ class SquareApiService {
 
   async getLocations() {
     const result = await this.callEdgeFunction('/locations');
-    const locations = result.locations || [];
+    // Handle both wrapped (result.data.locations) and direct (result.locations) formats
+    const locations = result.data?.locations || result.locations || [];
     console.log(`✅ Square API: Loaded ${locations.length} locations`);
     return locations;
   }
 
   async getTeamMembers(): Promise<TeamMember[]> {
     const result = await this.callEdgeFunction('/team-members');
-    const teamMembers = result.teamMembers || [];
+    // Handle both wrapped (result.data.team_members) and direct (result.team_members) formats
+    const teamMembers = result.data?.team_members || result.team_members || [];
     console.log(`✅ Square API: Loaded ${teamMembers.length} team members`);
     return teamMembers;
   }
@@ -43,7 +45,8 @@ class SquareApiService {
     });
     
     const result = await this.callEdgeFunction(`/orders?${params.toString()}`);
-    const orders = result.orders || [];
+    // Handle both wrapped (result.data.orders) and direct (result.orders) formats
+    const orders = result.data?.orders || result.orders || [];
     const duration = Date.now() - startTime;
     console.log(`✅ Square API: Loaded ${orders.length} orders in ${duration}ms`);
     return orders;
@@ -59,14 +62,15 @@ class SquareApiService {
     
     const duration = Date.now() - startTime;
     const metrics = {
-      netSales: result.netSales || 0,
-      coverCount: result.coverCount || 0,
-      ppa: result.ppa || 0,
-      salesPerHour: result.salesPerHour || 0,
-      totalHours: result.totalHours || 0,
-      totalShifts: result.totalShifts || 0,
-      dailyPerformance: result.dailyPerformance || [],
-      topItems: result.topItems || []
+      // Handle both wrapped (result.data.*) and direct (result.*) formats
+      netSales: result.data?.netSales || result.netSales || 0,
+      coverCount: result.data?.coverCount || result.coverCount || 0,
+      ppa: result.data?.ppa || result.ppa || 0,
+      salesPerHour: result.data?.salesPerHour || result.salesPerHour || 0,
+      totalHours: result.data?.totalHours || result.totalHours || 0,
+      totalShifts: result.data?.totalShifts || result.totalShifts || 0,
+      dailyPerformance: result.data?.dailyPerformance || result.dailyPerformance || [],
+      topItems: result.data?.topItems || result.topItems || []
     };
     
     console.log(`✅ Square API: Generated performance metrics in ${duration}ms - $${metrics.netSales.toFixed(2)} sales, ${metrics.coverCount} covers`);
