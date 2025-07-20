@@ -5,8 +5,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MetricCard } from '@/components/MetricCard';
-import { PerformanceChart } from '@/components/PerformanceChart';
+import { TeamMemberRanking } from '@/components/TeamMemberRanking';
 import { TopItemsChart } from '@/components/TopItemsChart';
+import { DatePresetSelector } from '@/components/DatePresetSelector';
 import { Download } from 'lucide-react';
 import { subDays, format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -172,7 +173,7 @@ const Dashboard = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-0 pb-3">
-          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-6 gap-3">
             <div>
               <label className="text-xs font-medium mb-1 block text-foreground">Location</label>
               <Select value={selectedLocation} onValueChange={setSelectedLocation}>
@@ -204,24 +205,12 @@ const Dashboard = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <label className="text-xs font-medium mb-1 block text-foreground">Start Date</label>
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="h-8 text-xs"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium mb-1 block text-foreground">End Date</label>
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="h-8 text-xs"
-              />
-            </div>
+            <DatePresetSelector
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
+            />
             <div className="flex items-end">
               <Button 
                 onClick={handleGenerateReport} 
@@ -242,8 +231,8 @@ const Dashboard = () => {
           Loading locations and team members...
         </div>
       ) : isLoading ? (
-        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
+        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          {[...Array(6)].map((_, i) => (
             <Card key={i} className="animate-pulse shadow-sm border h-20">
               <CardContent className="p-3">
                 <div className="h-4 bg-muted rounded mb-1"></div>
@@ -253,7 +242,7 @@ const Dashboard = () => {
           ))}
         </div>
       ) : metrics ? (
-        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <MetricCard
             title="Net Sales"
             value={`$${metrics.netSales.toFixed(2)}`}
@@ -263,12 +252,20 @@ const Dashboard = () => {
             value={metrics.coverCount.toString()}
           />
           <MetricCard
-            title="PPA"
-            value={`$${metrics.ppa.toFixed(2)}`}
+            title="Desserts Sold"
+            value={metrics.dessertsSold?.toString() || '0'}
           />
           <MetricCard
-            title="Sales/Hour"
-            value={`$${metrics.salesPerHour.toFixed(2)}`}
+            title="Beer Sold"
+            value={metrics.beerSold?.toString() || '0'}
+          />
+          <MetricCard
+            title="Cocktails Sold"
+            value={metrics.cocktailsSold?.toString() || '0'}
+          />
+          <MetricCard
+            title="Avg Order Value"
+            value={`$${metrics.averageOrderValue?.toFixed(2) || '0.00'}`}
           />
         </div>
       ) : (
@@ -289,7 +286,7 @@ const Dashboard = () => {
       {/* Charts */}
       {metrics && (
         <div className="grid gap-3 md:grid-cols-2">
-          <PerformanceChart data={metrics.dailyPerformance} />
+          <TeamMemberRanking data={metrics.teamMemberSales || []} />
           <TopItemsChart data={metrics.topItems} />
         </div>
       )}

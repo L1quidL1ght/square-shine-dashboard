@@ -46,6 +46,17 @@ export interface PerformanceMetrics {
   totalShifts?: number;
   dailyPerformance: DailyPerformance[];
   topItems: TopItem[];
+  teamMemberSales: TeamMemberSales[];
+  dessertsSold: number;
+  beerSold: number;
+  cocktailsSold: number;
+  averageOrderValue: number;
+}
+
+export interface TeamMemberSales {
+  teamMemberId: string;
+  name: string;
+  sales: number;
 }
 
 export interface DailyPerformance {

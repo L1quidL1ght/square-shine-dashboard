@@ -73,6 +73,10 @@ serve(async (req) => {
                   end_at: perfEndDate
                 }
               }
+            },
+            sort: {
+              sort_field: 'CREATED_AT',
+              sort_order: 'ASC'
             }
           }
         });
@@ -162,6 +166,134 @@ serve(async (req) => {
       
       // Replace the team_members array with filtered results
       data.team_members = serversOnly;
+    }
+
+    // Calculate restaurant-specific metrics for performance endpoint
+    if (endpoint === '/performance' && response.ok && data.orders) {
+      console.log('=== CALCULATING PERFORMANCE METRICS ===');
+      const orders = data.orders || [];
+      
+      // Basic metrics
+      const netSales = orders.reduce((sum, order) => 
+        sum + (order.net_amounts?.total_money?.amount || 0), 0) / 100;
+      const coverCount = orders.length;
+      const ppa = coverCount > 0 ? netSales / coverCount : 0;
+      
+      // Calculate time period for sales per hour
+      const startDate = new Date(requestBody.startDate);
+      const endDate = new Date(requestBody.endDate);
+      const hoursInPeriod = Math.max(1, (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60));
+      const salesPerHour = netSales / hoursInPeriod;
+
+      // Daily performance
+      const dailyMap = new Map();
+      orders.forEach(order => {
+        const date = new Date(order.created_at).toISOString().split('T')[0];
+        const existing = dailyMap.get(date) || { sales: 0, covers: 0 };
+        existing.sales += (order.net_amounts?.total_money?.amount || 0) / 100;
+        existing.covers += 1;
+        dailyMap.set(date, existing);
+      });
+
+      const dailyPerformance = Array.from(dailyMap.entries()).map(([date, data]) => ({
+        date,
+        sales: data.sales,
+        covers: data.covers
+      })).sort((a, b) => a.date.localeCompare(b.date));
+
+      // Top items
+      const itemMap = new Map();
+      orders.forEach(order => {
+        order.line_items?.forEach(item => {
+          const existing = itemMap.get(item.name) || { quantity: 0, revenue: 0 };
+          existing.quantity += parseInt(item.quantity);
+          existing.revenue += (item.total_money?.amount || 0) / 100;
+          itemMap.set(item.name, existing);
+        });
+      });
+
+      const topItems = Array.from(itemMap.entries())
+        .map(([name, data]) => ({ name, ...data }))
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10);
+
+      // Team member sales ranking
+      const teamMemberMap = new Map();
+      orders.forEach(order => {
+        // Find team member from fulfillments
+        const teamMemberId = order.fulfillments?.[0]?.fulfillment_entries?.[0]?.team_member_id;
+        if (teamMemberId) {
+          const existing = teamMemberMap.get(teamMemberId) || { sales: 0, orders: 0 };
+          existing.sales += (order.net_amounts?.total_money?.amount || 0) / 100;
+          existing.orders += 1;
+          teamMemberMap.set(teamMemberId, existing);
+        }
+      });
+
+      // We'll need team member names, but for now use IDs
+      const teamMemberSales = Array.from(teamMemberMap.entries())
+        .map(([teamMemberId, data]) => ({
+          teamMemberId,
+          name: `Team Member ${teamMemberId.substring(0, 8)}`,
+          sales: data.sales
+        }))
+        .filter(tm => tm.sales > 0)
+        .sort((a, b) => b.sales - a.sales);
+
+      // Restaurant-specific metrics based on item names
+      let dessertsSold = 0;
+      let beerSold = 0;
+      let cocktailsSold = 0;
+
+      orders.forEach(order => {
+        order.line_items?.forEach(item => {
+          const itemName = item.name.toLowerCase();
+          const quantity = parseInt(item.quantity);
+          
+          // Dessert keywords
+          if (itemName.includes('dessert') || itemName.includes('cake') || 
+              itemName.includes('pie') || itemName.includes('ice cream') ||
+              itemName.includes('cookie') || itemName.includes('brownie')) {
+            dessertsSold += quantity;
+          }
+          
+          // Beer keywords  
+          if (itemName.includes('beer') || itemName.includes('ale') || 
+              itemName.includes('lager') || itemName.includes('ipa') ||
+              itemName.includes('stout') || itemName.includes('pilsner')) {
+            beerSold += quantity;
+          }
+          
+          // Cocktail keywords
+          if (itemName.includes('cocktail') || itemName.includes('martini') || 
+              itemName.includes('mojito') || itemName.includes('margarita') ||
+              itemName.includes('whiskey') || itemName.includes('vodka') ||
+              itemName.includes('rum') || itemName.includes('gin')) {
+            cocktailsSold += quantity;
+          }
+        });
+      });
+
+      const averageOrderValue = coverCount > 0 ? netSales / coverCount : 0;
+
+      // Replace the orders data with calculated metrics
+      data = {
+        netSales,
+        coverCount,
+        ppa,
+        salesPerHour,
+        dailyPerformance,
+        topItems,
+        teamMemberSales,
+        dessertsSold,
+        beerSold,
+        cocktailsSold,
+        averageOrderValue,
+        totalHours: hoursInPeriod,
+        totalShifts: 1
+      };
+      
+      console.log(`📊 Calculated metrics: $${netSales.toFixed(2)} sales, ${coverCount} covers, ${dessertsSold} desserts, ${beerSold} beers, ${cocktailsSold} cocktails`);
     }
     
     return new Response(JSON.stringify({

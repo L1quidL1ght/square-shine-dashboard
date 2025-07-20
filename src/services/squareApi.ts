@@ -61,7 +61,7 @@ class SquareApiService {
     });
     
     const duration = Date.now() - startTime;
-    const metrics = {
+    const metrics: PerformanceMetrics = {
       // Handle both wrapped (result.data.*) and direct (result.*) formats
       netSales: result.data?.netSales || result.netSales || 0,
       coverCount: result.data?.coverCount || result.coverCount || 0,
@@ -70,7 +70,12 @@ class SquareApiService {
       totalHours: result.data?.totalHours || result.totalHours || 0,
       totalShifts: result.data?.totalShifts || result.totalShifts || 0,
       dailyPerformance: result.data?.dailyPerformance || result.dailyPerformance || [],
-      topItems: result.data?.topItems || result.topItems || []
+      topItems: result.data?.topItems || result.topItems || [],
+      teamMemberSales: result.data?.teamMemberSales || result.teamMemberSales || [],
+      dessertsSold: result.data?.dessertsSold || result.dessertsSold || 0,
+      beerSold: result.data?.beerSold || result.beerSold || 0,
+      cocktailsSold: result.data?.cocktailsSold || result.cocktailsSold || 0,
+      averageOrderValue: result.data?.averageOrderValue || result.averageOrderValue || 0
     };
     
     console.log(`✅ Square API: Generated performance metrics in ${duration}ms - $${metrics.netSales.toFixed(2)} sales, ${metrics.coverCount} covers`);
@@ -132,7 +137,12 @@ class SquareApiService {
       ppa,
       salesPerHour,
       dailyPerformance: dailyPerformance.sort((a, b) => a.date.localeCompare(b.date)),
-      topItems
+      topItems,
+      teamMemberSales: [], // Empty for legacy method
+      dessertsSold: 0,
+      beerSold: 0,
+      cocktailsSold: 0,
+      averageOrderValue: netSales / coverCount || 0
     };
   }
 }
