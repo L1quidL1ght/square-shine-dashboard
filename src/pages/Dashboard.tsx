@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -6,88 +7,102 @@ import { Input } from '@/components/ui/input';
 import { MetricCard } from '@/components/MetricCard';
 import { PerformanceChart } from '@/components/PerformanceChart';
 import { TopItemsChart } from '@/components/TopItemsChart';
-import { Download, Calendar } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { subDays, format } from 'date-fns';
-import { squareApi } from '@/services/squareApi';
-import { TeamMember, PerformanceMetrics } from '@/types/square';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  useLocations, 
+  useTeamMembers, 
+  usePerformanceMetrics,
+  useGeneratePerformanceMetrics 
+} from '@/hooks/useSquareData';
 
 const Dashboard = () => {
-  const [locations, setLocations] = useState<any[]>([]);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [selectedTeamMember, setSelectedTeamMember] = useState<string>('all');
   const [startDate, setStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [loadingInitial, setLoadingInitial] = useState(true);
+  const [shouldFetchMetrics, setShouldFetchMetrics] = useState(false);
   const { toast } = useToast();
 
-  const loadInitialData = async () => {
-    setLoadingInitial(true);
-    try {
-      // Load locations and team members in parallel
-      const [locationsData, teamMembersData] = await Promise.all([
-        squareApi.getLocations(),
-        squareApi.getTeamMembers()
-      ]);
-      
-      setLocations(locationsData);
-      setTeamMembers(teamMembersData);
-      
-      if (locationsData.length > 0) {
-        console.log('Available locations:', locationsData);
-      }
-      if (teamMembersData.length === 0) {
-        toast({
-          title: "Info",
-          description: "No team members found. This is normal if you don't use Square's team member feature.",
-        });
-      }
-    } catch (error) {
-      console.error('Failed to load initial data:', error);
+  // React Query hooks
+  const { data: locations = [], isLoading: locationsLoading, error: locationsError } = useLocations();
+  const { data: teamMembers = [], isLoading: teamMembersLoading, error: teamMembersError } = useTeamMembers();
+  
+  const startDateObj = new Date(startDate);
+  const endDateObj = new Date(endDate);
+  const teamMemberId = selectedTeamMember === 'all' ? undefined : selectedTeamMember;
+  
+  const { 
+    data: metrics, 
+    isLoading: metricsLoading, 
+    error: metricsError,
+    isFetching: metricsFetching
+  } = usePerformanceMetrics(
+    startDateObj,
+    endDateObj,
+    teamMemberId,
+    shouldFetchMetrics
+  );
+
+  const generateMetricsMutation = useGeneratePerformanceMetrics();
+
+  // Handle initial loading state
+  const isInitialLoading = locationsLoading || teamMembersLoading;
+
+  // Handle errors
+  React.useEffect(() => {
+    if (locationsError) {
+      console.error('Failed to load locations:', locationsError);
       toast({
         title: "Error",
-        description: "Failed to load locations and team members",
+        description: "Failed to load locations",
         variant: "destructive",
       });
-    } finally {
-      setLoadingInitial(false);
     }
-  };
-
-  const generateReport = async () => {
-    setLoading(true);
-    try {
-      const teamMemberId = selectedTeamMember === 'all' ? undefined : selectedTeamMember;
-      const startDateTime = new Date(startDate);
-      const endDateTime = new Date(endDate);
-      
-      // Use the new server-side performance calculation
-      const calculatedMetrics = await squareApi.getPerformanceMetrics(
-        startDateTime,
-        endDateTime,
-        teamMemberId
-      );
-      
-      setMetrics(calculatedMetrics);
-    } catch (error) {
-      console.error('Failed to generate report:', error);
+    
+    if (teamMembersError) {
+      console.error('Failed to load team members:', teamMembersError);
+      toast({
+        title: "Error",
+        description: "Failed to load team members",
+        variant: "destructive",
+      });
+    }
+    
+    if (metricsError) {
+      console.error('Failed to load performance metrics:', metricsError);
       toast({
         title: "Error",
         description: "Failed to generate performance report",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
+    }
+  }, [locationsError, teamMembersError, metricsError, toast]);
+
+  // Show info toast for empty team members
+  React.useEffect(() => {
+    if (!teamMembersLoading && teamMembers.length === 0 && locations.length > 0) {
+      toast({
+        title: "Info",
+        description: "No team members found. This is normal if you don't use Square's team member feature.",
+      });
+    }
+  }, [teamMembers.length, teamMembersLoading, locations.length, toast]);
+
+  const handleGenerateReport = async () => {
+    setShouldFetchMetrics(true);
+    
+    try {
+      await generateMetricsMutation.mutateAsync({
+        startDate: startDateObj,
+        endDate: endDateObj,
+        teamMemberId
+      });
+    } catch (error) {
+      console.error('Failed to generate report:', error);
+      // Error handling is already done in the useEffect above
     }
   };
-
-  useEffect(() => {
-    loadInitialData();
-  }, []);
-
-  // Remove automatic loading on filter changes - now manual with Generate Report button
 
   const handleExport = () => {
     if (!metrics) return;
@@ -117,6 +132,13 @@ const Dashboard = () => {
       description: "Performance report exported successfully",
     });
   };
+
+  // Reset metrics fetch flag when filters change
+  React.useEffect(() => {
+    setShouldFetchMetrics(false);
+  }, [selectedTeamMember, startDate, endDate]);
+
+  const isLoading = generateMetricsMutation.isPending || metricsFetching;
 
   return (
     <div className="space-y-3">
@@ -178,12 +200,12 @@ const Dashboard = () => {
             </div>
             <div className="flex items-end">
               <Button 
-                onClick={generateReport} 
-                disabled={loading || loadingInitial} 
+                onClick={handleGenerateReport} 
+                disabled={isLoading || isInitialLoading} 
                 size="sm" 
                 className="h-8 text-xs"
               >
-                {loading ? 'Generating...' : 'Generate Report'}
+                {isLoading ? 'Generating...' : 'Generate Report'}
               </Button>
             </div>
           </div>
@@ -191,11 +213,11 @@ const Dashboard = () => {
       </Card>
 
       {/* Metrics Cards */}
-      {loadingInitial ? (
+      {isInitialLoading ? (
         <div className="text-center text-sm text-muted-foreground py-8">
           Loading locations and team members...
         </div>
-      ) : loading ? (
+      ) : isLoading ? (
         <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
             <Card key={i} className="animate-pulse shadow-sm border h-20">
