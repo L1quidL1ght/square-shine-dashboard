@@ -24,6 +24,15 @@ class SquareApiService {
     }
   }
 
+  async getLocations() {
+    try {
+      return await this.callEdgeFunction('getLocations');
+    } catch (error) {
+      console.error('Error fetching locations:', error);
+      return [];
+    }
+  }
+
   async getTeamMembers(): Promise<TeamMember[]> {
     try {
       return await this.callEdgeFunction('getTeamMembers');

@@ -28,6 +28,19 @@ serve(async (req) => {
     let result;
 
     switch (action) {
+      case 'getLocations':
+        const locationsResponse = await fetch(`${SQUARE_BASE_URL}/locations`, {
+          method: 'GET',
+          headers
+        });
+        const locationsData = await locationsResponse.json();
+        result = locationsData.locations?.map(loc => ({
+          id: loc.id,
+          name: loc.name,
+          status: loc.status
+        })) || [];
+        break;
+
       case 'getTeamMembers':
         const teamResponse = await fetch(`${SQUARE_BASE_URL}/team-members`, {
           method: 'GET',
@@ -48,7 +61,7 @@ serve(async (req) => {
               }
             },
             state_filter: {
-              states: ['COMPLETED']
+              states: ['COMPLETED', 'OPEN']
             }
           },
           location_ids: [locationId],
