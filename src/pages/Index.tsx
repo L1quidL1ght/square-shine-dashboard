@@ -1,13 +1,25 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { DashboardSidebar } from "@/components/DashboardSidebar";
+import Dashboard from "./Dashboard";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-dashboard-bg">
+        <DashboardSidebar />
+        <div className="flex-1 flex flex-col">
+          <header className="h-14 flex items-center border-b bg-background px-4">
+            <SidebarTrigger />
+            <div className="ml-4">
+              <h2 className="text-lg font-semibold">Restaurant Performance Analytics</h2>
+            </div>
+          </header>
+          <main className="flex-1 p-6">
+            <Dashboard />
+          </main>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 

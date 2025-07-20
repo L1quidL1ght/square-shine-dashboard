@@ -52,6 +52,19 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				dashboard: {
+					bg: 'hsl(var(--dashboard-bg))'
+				},
+				metric: {
+					increase: 'hsl(var(--metric-increase))',
+					decrease: 'hsl(var(--metric-decrease))'
+				},
+				chart: {
+					blue: 'hsl(var(--chart-blue))',
+					green: 'hsl(var(--chart-green))',
+					orange: 'hsl(var(--chart-orange))',
+					purple: 'hsl(var(--chart-purple))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
