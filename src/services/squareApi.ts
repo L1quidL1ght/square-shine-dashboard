@@ -22,14 +22,16 @@ class SquareApiService {
 
   async getLocations() {
     const result = await this.callEdgeFunction('/locations');
-    const locations = result.locations || [];
+    // Edge Function wraps Square API response in { data: ... }
+    const locations = result.data?.locations || result.locations || [];
     console.log(`✅ Square API: Loaded ${locations.length} locations`);
     return locations;
   }
 
   async getTeamMembers(): Promise<TeamMember[]> {
     const result = await this.callEdgeFunction('/team-members');
-    const teamMembers = result.teamMembers || [];
+    // Edge Function wraps Square API response in { data: ... }
+    const teamMembers = result.data?.team_members || result.teamMembers || [];
     console.log(`✅ Square API: Loaded ${teamMembers.length} team members`);
     return teamMembers;
   }
