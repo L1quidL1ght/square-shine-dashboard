@@ -110,8 +110,12 @@ serve(async (req) => {
         break;
 
       case '/performance':
-        // Handle performance metrics calculation
-        const performanceData = params.body ? JSON.parse(params.body) : {};
+        // Handle performance metrics calculation - check for body data
+        let performanceData = {};
+        if (params.body) {
+          // If body is a string, parse it; if it's already an object, use it directly
+          performanceData = typeof params.body === 'string' ? JSON.parse(params.body) : params.body;
+        }
         const { startDate: perfStartDate, endDate: perfEndDate, teamMemberId: perfTeamMemberId } = performanceData;
         
         // Get orders for performance calculation
