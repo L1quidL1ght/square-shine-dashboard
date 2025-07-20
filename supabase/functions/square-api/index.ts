@@ -18,43 +18,85 @@ serve(async (req) => {
   try {
     console.log('Processing POST request');
     
-    // Test environment variables
     const squareToken = Deno.env.get('SQUARE_ACCESS_TOKEN');
     const locationId = Deno.env.get('SQUARE_LOCATION_ID');
-    console.log('Environment check:', {
-      hasToken: !!squareToken,
-      tokenLength: squareToken?.length,
-      hasLocationId: !!locationId
-    });
+    
+    if (!squareToken || !locationId) {
+      throw new Error('Missing required environment variables');
+    }
 
-    // Parse request body
-    const body = await req.json();
-    console.log('Request body:', JSON.stringify(body, null, 2));
+    const { endpoint, body: requestBody } = await req.json();
+    console.log('Request:', { endpoint, body: requestBody });
 
-    // Test basic Square API call
-    console.log('Testing Square API...');
-    const response = await fetch('https://connect.squareup.com/v2/locations', {
-      method: 'GET',
+    let squareApiUrl = '';
+    let requestOptions: RequestInit = {
       headers: {
         'Authorization': `Bearer ${squareToken}`,
         'Square-Version': '2023-10-18',
         'Content-Type': 'application/json'
       }
-    });
-    
-    console.log('Square API response status:', response.status);
+    };
+
+    // Handle different endpoints with proper parameter extraction
+    switch (endpoint) {
+      case '/orders':
+        const { startDate, endDate, teamMemberId } = requestBody || {};
+        squareApiUrl = 'https://connect.squareup.com/v2/orders/search';
+        requestOptions.method = 'POST';
+        requestOptions.body = JSON.stringify({
+          location_ids: [locationId],
+          query: {
+            filter: {
+              date_time_filter: {
+                created_at: {
+                  start_at: startDate,
+                  end_at: endDate
+                }
+              },
+              ...(teamMemberId && {
+                fulfillment_filter: {
+                  fulfillment_types: ['PICKUP', 'SHIPMENT'],
+                  fulfillment_states: ['PROPOSED', 'RESERVED', 'PREPARED', 'COMPLETED']
+                }
+              })
+            }
+          }
+        });
+        break;
+        
+      case '/performance':
+        const { startDate: perfStartDate, endDate: perfEndDate, teamMemberId: perfTeamMemberId } = requestBody || {};
+        squareApiUrl = 'https://connect.squareup.com/v2/orders/search';
+        requestOptions.method = 'POST';
+        requestOptions.body = JSON.stringify({
+          location_ids: [locationId],
+          query: {
+            filter: {
+              date_time_filter: {
+                created_at: {
+                  start_at: perfStartDate,
+                  end_at: perfEndDate
+                }
+              }
+            }
+          }
+        });
+        break;
+        
+      default:
+        throw new Error(`Unsupported endpoint: ${endpoint}`);
+    }
+
+    console.log('Making Square API call to:', squareApiUrl);
+    const response = await fetch(squareApiUrl, requestOptions);
     const data = await response.json();
-    console.log('Square API data:', JSON.stringify(data, null, 2));
+    
+    console.log('Square API response:', { status: response.status, data });
     
     return new Response(JSON.stringify({
-      success: true,
-      message: 'Diagnostic test completed',
-      results: {
-        environmentOk: !!squareToken && !!locationId,
-        squareApiStatus: response.status,
-        locationsFound: data.locations?.length || 0,
-        requestReceived: body
-      }
+      success: response.ok,
+      data: data,
+      status: response.status
     }), {
       status: 200,
       headers: { 
