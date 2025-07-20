@@ -101,63 +101,65 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Performance Dashboard</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">Performance Dashboard</h2>
+          <p className="text-xs text-muted-foreground">
             Track team member performance and sales metrics
           </p>
         </div>
-        <Button onClick={handleExport} disabled={!metrics} variant="outline">
-          <Download className="mr-2 h-4 w-4" />
-          Export Report
+        <Button onClick={handleExport} disabled={!metrics} variant="outline" size="sm">
+          <Download className="mr-2 h-3 w-3" />
+          Export
         </Button>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium">Filters</CardTitle>
+          <CardDescription className="text-xs">
             Select team member to view performance metrics
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <label className="text-sm font-medium mb-2 block">Team Member</label>
-            <Select value={selectedTeamMember} onValueChange={setSelectedTeamMember}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select team member" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Team Members</SelectItem>
-                {teamMembers.map((member) => (
-                  <SelectItem key={member.id} value={member.id}>
-                    {member.given_name} {member.family_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <CardContent className="pt-0">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
+              <label className="text-xs font-medium mb-1 block text-foreground">Team Member</label>
+              <Select value={selectedTeamMember} onValueChange={setSelectedTeamMember}>
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder="Select team member" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Team Members</SelectItem>
+                  {teamMembers.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.given_name} {member.family_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Metrics Cards */}
       {loading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="h-8 bg-muted rounded mb-2"></div>
-                <div className="h-4 bg-muted rounded w-1/2"></div>
+            <Card key={i} className="animate-pulse shadow-sm">
+              <CardContent className="p-3">
+                <div className="h-6 bg-muted rounded mb-1"></div>
+                <div className="h-3 bg-muted rounded w-1/2"></div>
               </CardContent>
             </Card>
           ))}
         </div>
       ) : metrics ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
           <MetricCard
             title="Net Sales"
             value={`$${metrics.netSales.toFixed(2)}`}
@@ -176,8 +178,8 @@ const Dashboard = () => {
           />
         </div>
       ) : (
-        <Card>
-          <CardContent className="p-6 text-center text-muted-foreground">
+        <Card className="shadow-sm">
+          <CardContent className="p-4 text-center text-muted-foreground text-sm">
             Loading performance metrics...
           </CardContent>
         </Card>
@@ -185,7 +187,7 @@ const Dashboard = () => {
 
       {/* Charts */}
       {metrics && (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           <PerformanceChart data={metrics.dailyPerformance} />
           <TopItemsChart data={metrics.topItems} />
         </div>
