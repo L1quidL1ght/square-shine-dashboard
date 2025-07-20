@@ -1,20 +1,21 @@
-import { useState, useEffect } from "react";
-import { DollarSign, Users, Calculator, Clock, Download, Filter } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DatePicker } from "@/components/ui/date-picker";
-import { MetricCard } from "@/components/MetricCard";
-import { PerformanceChart } from "@/components/PerformanceChart";
-import { TopItemsChart } from "@/components/TopItemsChart";
-import { squareApi } from "@/services/squareApi";
-import { TeamMember, PerformanceMetrics } from "@/types/square";
-import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { MetricCard } from '@/components/MetricCard';
+import { PerformanceChart } from '@/components/PerformanceChart';
+import { TopItemsChart } from '@/components/TopItemsChart';
+import { Download } from 'lucide-react';
+import { subDays } from 'date-fns';
+import { squareApi } from '@/services/squareApi';
+import { TeamMember, PerformanceMetrics } from '@/types/square';
+import { useToast } from '@/hooks/use-toast';
 
-export default function Dashboard() {
+const Dashboard = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [selectedTeamMember, setSelectedTeamMember] = useState<string>("all");
-  const [startDate, setStartDate] = useState<Date>(new Date(new Date().setDate(new Date().getDate() - 7)));
-  const [endDate, setEndDate] = useState<Date>(new Date());
+  const [selectedTeamMember, setSelectedTeamMember] = useState<string>('all');
+  const [startDate] = useState(subDays(new Date(), 7));
+  const [endDate] = useState(new Date());
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -24,6 +25,7 @@ export default function Dashboard() {
       const members = await squareApi.getTeamMembers();
       setTeamMembers(members);
     } catch (error) {
+      console.error('Failed to load team members:', error);
       toast({
         title: "Error",
         description: "Failed to load team members",
@@ -35,14 +37,25 @@ export default function Dashboard() {
   const loadMetrics = async () => {
     setLoading(true);
     try {
-      const teamMemberId = selectedTeamMember === "all" ? undefined : selectedTeamMember;
-      const orders = await squareApi.getOrdersForPeriod(startDate, endDate, teamMemberId);
-      const performanceMetrics = squareApi.calculatePerformanceMetrics(orders, startDate, endDate);
-      setMetrics(performanceMetrics);
+      const teamMemberId = selectedTeamMember === 'all' ? undefined : selectedTeamMember;
+      const orders = await squareApi.getOrdersForPeriod(
+        startDate,
+        endDate,
+        teamMemberId
+      );
+      
+      const calculatedMetrics = squareApi.calculatePerformanceMetrics(
+        orders,
+        startDate,
+        endDate
+      );
+      
+      setMetrics(calculatedMetrics);
     } catch (error) {
+      console.error('Failed to load metrics:', error);
       toast({
         title: "Error",
-        description: "Failed to load performance data",
+        description: "Failed to load performance metrics",
         variant: "destructive",
       });
     } finally {
@@ -52,7 +65,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadTeamMembers();
-    loadMetrics();
   }, []);
 
   useEffect(() => {
@@ -63,24 +75,19 @@ export default function Dashboard() {
     if (!metrics) return;
 
     const exportData = {
-      period: `${startDate.toDateString()} to ${endDate.toDateString()}`,
-      teamMember: selectedTeamMember === "all" ? "All Team Members" : 
-        teamMembers.find(m => m.id === selectedTeamMember)?.given_name + " " + 
-        teamMembers.find(m => m.id === selectedTeamMember)?.family_name,
-      metrics: {
-        netSales: metrics.netSales,
-        coverCount: metrics.coverCount,
-        ppa: metrics.ppa,
-        salesPerHour: metrics.salesPerHour,
+      teamMember: selectedTeamMember === 'all' ? 'All Team Members' : 
+        teamMembers.find(tm => tm.id === selectedTeamMember)?.given_name || 'Unknown',
+      dateRange: {
+        from: startDate.toISOString(),
+        to: endDate.toISOString()
       },
-      dailyPerformance: metrics.dailyPerformance,
-      topItems: metrics.topItems,
+      metrics
     };
 
     const dataStr = JSON.stringify(exportData, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
     
-    const exportFileDefaultName = `restaurant-performance-${startDate.toISOString().split('T')[0]}-to-${endDate.toISOString().split('T')[0]}.json`;
+    const exportFileDefaultName = `performance-report-${new Date().toISOString().split('T')[0]}.json`;
     
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
@@ -94,48 +101,37 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
-            Performance Dashboard
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Monitor team member performance and restaurant metrics
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Performance Dashboard</h2>
+          <p className="text-muted-foreground">
+            Track team member performance and sales metrics
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
-            size="lg"
-            className="shadow-sm hover:shadow-md transition-all duration-200"
-          >
-            <Filter className="mr-2 h-4 w-4" />
-            Filters
-          </Button>
-          <Button 
-            onClick={handleExport} 
-            disabled={!metrics}
-            size="lg"
-            className="shadow-lg hover:shadow-xl transition-all duration-200 bg-gradient-to-r from-primary to-primary/90"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Export Report
-          </Button>
-        </div>
+        <Button onClick={handleExport} disabled={!metrics} variant="outline">
+          <Download className="mr-2 h-4 w-4" />
+          Export Report
+        </Button>
       </div>
 
       {/* Filters */}
-      <div className="bg-card/50 backdrop-blur-sm border rounded-2xl p-6 shadow-sm">
-        <div className="flex flex-wrap gap-6">
-          <div className="space-y-2 min-w-[200px]">
-            <label className="text-sm font-semibold text-foreground">Team Member</label>
+      <Card>
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+          <CardDescription>
+            Select team member to view performance metrics
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <label className="text-sm font-medium mb-2 block">Team Member</label>
             <Select value={selectedTeamMember} onValueChange={setSelectedTeamMember}>
-              <SelectTrigger className="h-11 border-2 focus:border-primary/50 transition-colors">
+              <SelectTrigger>
                 <SelectValue placeholder="Select team member" />
               </SelectTrigger>
-              <SelectContent className="bg-background/95 backdrop-blur-sm">
+              <SelectContent>
                 <SelectItem value="all">All Team Members</SelectItem>
                 {teamMembers.map((member) => (
                   <SelectItem key={member.id} value={member.id}>
@@ -145,70 +141,57 @@ export default function Dashboard() {
               </SelectContent>
             </Select>
           </div>
-          
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground">Start Date</label>
-            <DatePicker
-              date={startDate}
-              onDateChange={(date) => date && setStartDate(date)}
-              placeholder="Select start date"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground">End Date</label>
-            <DatePicker
-              date={endDate}
-              onDateChange={(date) => date && setEndDate(date)}
-              placeholder="Select end date"
-            />
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Metrics Cards */}
       {loading ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-40 bg-muted/50 animate-pulse rounded-2xl shadow-sm" />
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="h-8 bg-muted rounded mb-2"></div>
+                <div className="h-4 bg-muted rounded w-1/2"></div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       ) : metrics ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <MetricCard
             title="Net Sales"
             value={`$${metrics.netSales.toFixed(2)}`}
-            change={12.5}
-            icon={<DollarSign className="h-5 w-5 text-chart-green" />}
           />
           <MetricCard
             title="Cover Count"
-            value={metrics.coverCount}
-            change={8.2}
-            icon={<Users className="h-5 w-5 text-chart-blue" />}
+            value={metrics.coverCount.toString()}
           />
           <MetricCard
-            title="PPA (Per Person Average)"
+            title="PPA"
             value={`$${metrics.ppa.toFixed(2)}`}
-            change={5.1}
-            icon={<Calculator className="h-5 w-5 text-chart-orange" />}
           />
           <MetricCard
-            title="Sales per Hour"
+            title="Sales/Hour"
             value={`$${metrics.salesPerHour.toFixed(2)}`}
-            change={-2.3}
-            icon={<Clock className="h-5 w-5 text-chart-purple" />}
           />
         </div>
-      ) : null}
+      ) : (
+        <Card>
+          <CardContent className="p-6 text-center text-muted-foreground">
+            Loading performance metrics...
+          </CardContent>
+        </Card>
+      )}
 
       {/* Charts */}
       {metrics && (
-        <div className="grid gap-8 lg:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           <PerformanceChart data={metrics.dailyPerformance} />
           <TopItemsChart data={metrics.topItems} />
         </div>
       )}
     </div>
   );
-}
+};
+
+export default Dashboard;
