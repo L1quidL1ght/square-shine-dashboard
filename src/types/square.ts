@@ -70,3 +70,40 @@ export interface TopItem {
   quantity: number;
   revenue: number;
 }
+
+export interface RestaurantAnalytics {
+  // Overall metrics
+  netSales: number;
+  totalCovers: number;
+  averageOrderValue: number;
+  totalTransactions: number;
+  
+  // Time-based metrics
+  lunchCovers: number;
+  lunchSales: number;
+  happyHourCovers: number;
+  happyHourSales: number;
+  dinnerCovers: number;
+  dinnerSales: number;
+  
+  // Category sales
+  categorySales: CategorySales;
+  
+  // Channel sales
+  channelSales: ChannelSales;
+}
+
+export interface CategorySales {
+  kickstarters: number;
+  beer: number;
+  drinks: number;
+  merch: number;
+  desserts: number;
+  spirits: number;
+}
+
+export interface ChannelSales {
+  squareOnline: number;
+  doorDash: number;
+  inStore: number;
+}

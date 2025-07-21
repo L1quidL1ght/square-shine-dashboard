@@ -1,4 +1,4 @@
-import { TeamMember, Order, PerformanceMetrics, DailyPerformance, TopItem } from '@/types/square';
+import { TeamMember, Order, PerformanceMetrics, DailyPerformance, TopItem, RestaurantAnalytics } from '@/types/square';
 import { supabase } from '@/integrations/supabase/client';
 
 class SquareApiService {
@@ -82,6 +82,53 @@ class SquareApiService {
     
     console.log(`✅ Square API: Generated performance metrics in ${duration}ms - $${metrics.netSales.toFixed(2)} sales, ${metrics.coverCount} covers`);
     return metrics;
+  }
+
+  async getRestaurantAnalytics(startDate: Date, endDate: Date): Promise<RestaurantAnalytics> {
+    const startTime = Date.now();
+    
+    // Use restaurant analytics endpoint
+    const result = await this.callEdgeFunction('/restaurant-analytics', {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString()
+    });
+    
+    const duration = Date.now() - startTime;
+    const analytics: RestaurantAnalytics = {
+      // Overall metrics
+      netSales: result.data?.netSales || result.netSales || 0,
+      totalCovers: result.data?.totalCovers || result.totalCovers || 0,
+      averageOrderValue: result.data?.averageOrderValue || result.averageOrderValue || 0,
+      totalTransactions: result.data?.totalTransactions || result.totalTransactions || 0,
+      
+      // Time-based metrics
+      lunchCovers: result.data?.lunchCovers || result.lunchCovers || 0,
+      lunchSales: result.data?.lunchSales || result.lunchSales || 0,
+      happyHourCovers: result.data?.happyHourCovers || result.happyHourCovers || 0,
+      happyHourSales: result.data?.happyHourSales || result.happyHourSales || 0,
+      dinnerCovers: result.data?.dinnerCovers || result.dinnerCovers || 0,
+      dinnerSales: result.data?.dinnerSales || result.dinnerSales || 0,
+      
+      // Category sales
+      categorySales: result.data?.categorySales || result.categorySales || {
+        kickstarters: 0,
+        beer: 0,
+        drinks: 0,
+        merch: 0,
+        desserts: 0,
+        spirits: 0
+      },
+      
+      // Channel sales
+      channelSales: result.data?.channelSales || result.channelSales || {
+        squareOnline: 0,
+        doorDash: 0,
+        inStore: 0
+      }
+    };
+    
+    console.log(`✅ Square API: Generated restaurant analytics in ${duration}ms - $${analytics.netSales.toFixed(2)} total sales`);
+    return analytics;
   }
 
   calculatePerformanceMetrics(orders: Order[], startDate: Date, endDate: Date): PerformanceMetrics {

@@ -81,6 +81,29 @@ serve(async (req) => {
           }
         });
         break;
+        
+      case '/restaurant-analytics':
+        const { startDate: analyticsStartDate, endDate: analyticsEndDate } = requestBody || {};
+        squareApiUrl = 'https://connect.squareup.com/v2/orders/search';
+        requestOptions.method = 'POST';
+        requestOptions.body = JSON.stringify({
+          location_ids: [locationId],
+          query: {
+            filter: {
+              date_time_filter: {
+                created_at: {
+                  start_at: analyticsStartDate,
+                  end_at: analyticsEndDate
+                }
+              }
+            },
+            sort: {
+              sort_field: 'CREATED_AT',
+              sort_order: 'ASC'
+            }
+          }
+        });
+        break;
 
       case '/team-members':
         squareApiUrl = 'https://connect.squareup.com/v2/team-members/search';
@@ -412,6 +435,145 @@ serve(async (req) => {
       };
       
       console.log(`📊 Calculated metrics: $${netSales.toFixed(2)} sales, ${coverCount} covers, ${dessertsSold} desserts, ${beerSold} beers, ${cocktailsSold} cocktails`);
+    }
+
+    // Calculate comprehensive restaurant analytics
+    if (endpoint === '/restaurant-analytics' && response.ok && data.orders) {
+      console.log('=== RESTAURANT ANALYTICS CALCULATION ===');
+      const orders = data.orders || [];
+      
+      // Overall metrics
+      const netSales = orders.reduce((sum, order) => 
+        sum + (order.net_amounts?.total_money?.amount || 0), 0) / 100;
+      const totalCovers = orders.length;
+      const averageOrderValue = totalCovers > 0 ? netSales / totalCovers : 0;
+      const totalTransactions = orders.length;
+
+      // Time-based metrics (based on created_at time)
+      let lunchCovers = 0, lunchSales = 0;
+      let happyHourCovers = 0, happyHourSales = 0;
+      let dinnerCovers = 0, dinnerSales = 0;
+
+      // Category sales tracking
+      let kickstartersSales = 0, beerSales = 0, drinksSales = 0;
+      let merchSales = 0, dessertsSales = 0, spiritsSales = 0;
+      
+      // Channel sales tracking
+      let squareOnlineSales = 0, doorDashSales = 0, inStoreSales = 0;
+
+      orders.forEach(order => {
+        const orderValue = (order.net_amounts?.total_money?.amount || 0) / 100;
+        const orderTime = new Date(order.created_at);
+        const hour = orderTime.getHours();
+        
+        // Time-based classification
+        if (hour >= 11 && hour < 15) { // 11AM - 3PM
+          lunchCovers++;
+          lunchSales += orderValue;
+        } else if (hour >= 15 && hour < 18) { // 3PM - 6PM
+          happyHourCovers++;
+          happyHourSales += orderValue;
+        } else if (hour >= 18 || hour < 11) { // 6PM - Close
+          dinnerCovers++;
+          dinnerSales += orderValue;
+        }
+
+        // Channel detection (based on order source)
+        const source = order.source?.name?.toLowerCase() || '';
+        if (source.includes('online') || source.includes('web')) {
+          squareOnlineSales += orderValue;
+        } else if (source.includes('doordash') || source.includes('door dash')) {
+          doorDashSales += orderValue;
+        } else {
+          inStoreSales += orderValue;
+        }
+
+        // Category sales (based on item names)
+        order.line_items?.forEach(item => {
+          const itemName = item.name?.toLowerCase() || '';
+          const itemValue = (item.total_money?.amount || 0) / 100;
+          
+          // Kickstarters (appetizers, starters)
+          if (itemName.includes('appetizer') || itemName.includes('starter') || 
+              itemName.includes('kick') || itemName.includes('wings') ||
+              itemName.includes('nachos') || itemName.includes('dip')) {
+            kickstartersSales += itemValue;
+          }
+          
+          // Beer
+          else if (itemName.includes('beer') || itemName.includes('ale') || 
+                   itemName.includes('lager') || itemName.includes('ipa') ||
+                   itemName.includes('stout') || itemName.includes('pilsner')) {
+            beerSales += itemValue;
+          }
+          
+          // Drinks (non-alcoholic)
+          else if (itemName.includes('soda') || itemName.includes('coke') || 
+                   itemName.includes('sprite') || itemName.includes('tea') ||
+                   itemName.includes('coffee') || itemName.includes('juice')) {
+            drinksSales += itemValue;
+          }
+          
+          // Merch
+          else if (itemName.includes('shirt') || itemName.includes('hat') || 
+                   itemName.includes('merch') || itemName.includes('gift card') ||
+                   itemName.includes('egift')) {
+            merchSales += itemValue;
+          }
+          
+          // Desserts
+          else if (itemName.includes('dessert') || itemName.includes('cake') || 
+                   itemName.includes('pie') || itemName.includes('ice cream') ||
+                   itemName.includes('cookie') || itemName.includes('brownie')) {
+            dessertsSales += itemValue;
+          }
+          
+          // Spirits (hard liquor, cocktails)
+          else if (itemName.includes('whiskey') || itemName.includes('vodka') || 
+                   itemName.includes('rum') || itemName.includes('gin') ||
+                   itemName.includes('cocktail') || itemName.includes('martini') ||
+                   itemName.includes('shot')) {
+            spiritsSales += itemValue;
+          }
+        });
+      });
+
+      // Replace orders data with calculated analytics
+      data = {
+        // Overall metrics
+        netSales,
+        totalCovers,
+        averageOrderValue,
+        totalTransactions,
+        
+        // Time-based metrics
+        lunchCovers,
+        lunchSales,
+        happyHourCovers,
+        happyHourSales,
+        dinnerCovers,
+        dinnerSales,
+        
+        // Category sales
+        categorySales: {
+          kickstarters: kickstartersSales,
+          beer: beerSales,
+          drinks: drinksSales,
+          merch: merchSales,
+          desserts: dessertsSales,
+          spirits: spiritsSales
+        },
+        
+        // Channel sales
+        channelSales: {
+          squareOnline: squareOnlineSales,
+          doorDash: doorDashSales,
+          inStore: inStoreSales
+        }
+      };
+      
+      console.log(`🏪 Restaurant Analytics: $${netSales.toFixed(2)} total | Lunch: $${lunchSales.toFixed(2)} | Dinner: $${dinnerSales.toFixed(2)} | Beer: $${beerSales.toFixed(2)}`);
+      console.log('==========================================');
     }
     
     return new Response(JSON.stringify({

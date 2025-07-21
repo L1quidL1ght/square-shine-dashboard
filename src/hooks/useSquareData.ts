@@ -1,7 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { squareApi } from '@/services/squareApi';
-import { TeamMember, PerformanceMetrics } from '@/types/square';
+import { TeamMember, PerformanceMetrics, RestaurantAnalytics } from '@/types/square';
 
 // Query keys for React Query
 export const squareQueryKeys = {
@@ -9,6 +9,8 @@ export const squareQueryKeys = {
   teamMembers: ['square', 'teamMembers'] as const,
   performanceMetrics: (startDate: string, endDate: string, teamMemberId?: string) => 
     ['square', 'performance', { startDate, endDate, teamMemberId }] as const,
+  restaurantAnalytics: (startDate: string, endDate: string) => 
+    ['square', 'restaurantAnalytics', { startDate, endDate }] as const,
 };
 
 // Hook for fetching locations
@@ -68,6 +70,46 @@ export const useGeneratePerformanceMetrics = () => {
           variables.startDate.toISOString(),
           variables.endDate.toISOString(),
           variables.teamMemberId
+        ),
+        data
+      );
+    },
+  });
+};
+
+// Hook for fetching restaurant analytics
+export const useRestaurantAnalytics = (
+  startDate: Date,
+  endDate: Date,
+  enabled: boolean = true
+) => {
+  return useQuery({
+    queryKey: squareQueryKeys.restaurantAnalytics(
+      startDate.toISOString(),
+      endDate.toISOString()
+    ),
+    queryFn: () => squareApi.getRestaurantAnalytics(startDate, endDate),
+    enabled,
+    staleTime: 2 * 60 * 1000, // 2 minutes for analytics data
+    retry: 1,
+  });
+};
+
+// Hook for manual restaurant analytics generation
+export const useGenerateRestaurantAnalytics = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ startDate, endDate }: {
+      startDate: Date;
+      endDate: Date;
+    }) => squareApi.getRestaurantAnalytics(startDate, endDate),
+    onSuccess: (data, variables) => {
+      // Update the cache with the new data
+      queryClient.setQueryData(
+        squareQueryKeys.restaurantAnalytics(
+          variables.startDate.toISOString(),
+          variables.endDate.toISOString()
         ),
         data
       );
