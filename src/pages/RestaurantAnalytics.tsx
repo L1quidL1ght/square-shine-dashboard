@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { MetricCard } from '@/components/MetricCard';
 import { CategorySalesChart } from '@/components/CategorySalesChart';
 import { TimeBasedChart } from '@/components/TimeBasedChart';
-import { Download, TrendingUp, Clock, ShoppingCart, BarChart3, Users } from 'lucide-react';
+import { Download, TrendingUp, Clock, ShoppingCart } from 'lucide-react';
 import { subDays, format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -17,7 +16,6 @@ import {
 } from '@/hooks/useSquareData';
 
 const RestaurantAnalytics = () => {
-  const location = useLocation();
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [startDate, setStartDate] = useState(format(subDays(new Date(), 7), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -115,30 +113,9 @@ const RestaurantAnalytics = () => {
     <div className="min-h-screen w-full bg-dashboard-bg">
       <header className="flex items-center justify-between p-4 bg-background border-b border-border">
         <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold text-foreground">Square Analytics</h1>
+          <h1 className="text-lg font-semibold text-foreground">Restaurant Analytics</h1>
+          <span className="text-sm text-muted-foreground">Square POS Integration</span>
         </div>
-        <nav className="flex items-center gap-2">
-          <Link to="/">
-            <Button 
-              variant={location.pathname === '/' ? "default" : "outline"} 
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <Users className="h-4 w-4" />
-              Team Performance
-            </Button>
-          </Link>
-          <Link to="/analytics">
-            <Button 
-              variant={location.pathname === '/analytics' ? "default" : "outline"} 
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <BarChart3 className="h-4 w-4" />
-              Restaurant Analytics
-            </Button>
-          </Link>
-        </nav>
       </header>
       
       <main className="flex-1 overflow-auto">
