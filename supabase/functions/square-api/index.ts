@@ -95,6 +95,30 @@ serve(async (req) => {
         });
         break;
         
+      case '/payments':
+        const { startDate: paymentsStartDate, endDate: paymentsEndDate } = requestBody || {};
+        squareApiUrl = 'https://connect.squareup.com/v2/payments';
+        requestOptions.method = 'GET';
+        
+        // Add query parameters for filtering payments
+        const paymentsParams = new URLSearchParams({
+          location_id: locationId,
+          ...(paymentsStartDate && { begin_time: paymentsStartDate }),
+          ...(paymentsEndDate && { end_time: paymentsEndDate }),
+          limit: '200' // Get more payments per request
+        });
+        squareApiUrl += '?' + paymentsParams.toString();
+        break;
+        
+      case '/payment':
+        const { paymentId } = requestBody || {};
+        if (!paymentId) {
+          throw new Error('Payment ID is required');
+        }
+        squareApiUrl = `https://connect.squareup.com/v2/payments/${paymentId}`;
+        requestOptions.method = 'GET';
+        break;
+        
       case '/locations':
         console.log('=== LOCATIONS DEBUG ===');
         console.log('Access token exists:', !!squareToken);
@@ -118,7 +142,7 @@ serve(async (req) => {
       console.log('Locations response headers:', Object.fromEntries(response.headers.entries()));
     }
     
-    const data = await response.json();
+    let data = await response.json();
     
     // Add detailed data logging for locations endpoint
     if (endpoint === '/locations') {
@@ -129,6 +153,17 @@ serve(async (req) => {
     }
     
     console.log('Square API response:', { status: response.status, data });
+    
+    // Add detailed logging for performance endpoint
+    if (endpoint === '/performance') {
+      console.log('=== PERFORMANCE DEBUG ===');
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      console.log('Performance data:', JSON.stringify(data, null, 2));
+      console.log('Number of orders found:', data.orders?.length || 0);
+      console.log('Request body was:', JSON.stringify(requestBody, null, 2));
+      console.log('==========================');
+    }
     
     // Add detailed logging for locations endpoint
     if (endpoint === '/locations') {
@@ -164,8 +199,91 @@ serve(async (req) => {
       console.log('Servers found:', serversOnly.length);
       console.log('================================');
       
-      // Replace the team_members array with filtered results
-      data.team_members = serversOnly;
+      // Create a new data object instead of modifying the existing one
+      data = { ...data, team_members: serversOnly };
+    }
+    
+    // Process payments to get team member specific performance
+    if (endpoint === '/performance' && response.ok) {
+      console.log('=== PERFORMANCE ENDPOINT (New Implementation) ===');
+      
+      const { startDate: perfStartDate, endDate: perfEndDate, teamMemberId: perfTeamMemberId } = requestBody || {};
+      
+      // Step 1: Get all payments for the date range
+      console.log('Step 1: Getting payments for date range...');
+      const paymentsUrl = 'https://connect.squareup.com/v2/payments';
+      const paymentsParams = new URLSearchParams({
+        location_id: locationId,
+        ...(perfStartDate && { begin_time: perfStartDate }),
+        ...(perfEndDate && { end_time: perfEndDate }),
+        limit: '200'
+      });
+      
+      const paymentsResponse = await fetch(paymentsUrl + '?' + paymentsParams.toString(), {
+        headers: {
+          'Authorization': `Bearer ${squareToken}`,
+          'Square-Version': '2023-10-18',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const paymentsData = await paymentsResponse.json();
+      console.log('Total payments found:', paymentsData.payments?.length || 0);
+      
+      // Step 2: Filter payments by team member (if specified)
+      let filteredPayments = paymentsData.payments || [];
+      if (perfTeamMemberId && perfTeamMemberId !== 'all') {
+        filteredPayments = filteredPayments.filter(payment => 
+          payment.team_member_id === perfTeamMemberId
+        );
+        console.log(`Payments by team member ${perfTeamMemberId}:`, filteredPayments.length);
+      }
+      
+      // Step 3: Get order IDs from payments
+      const orderIds = filteredPayments.map(payment => payment.order_id).filter(Boolean);
+      console.log('Order IDs from payments:', orderIds.length);
+      
+      // Step 4: Get orders for those order IDs
+      const orders = [];
+      if (orderIds.length > 0) {
+        // Get orders in batches (Square allows bulk retrieval)
+        for (const orderId of orderIds) {
+          try {
+            const orderResponse = await fetch(`https://connect.squareup.com/v2/orders/${orderId}`, {
+              headers: {
+                'Authorization': `Bearer ${squareToken}`,
+                'Square-Version': '2023-10-18',
+                'Content-Type': 'application/json'
+              }
+            });
+            const orderData = await orderResponse.json();
+            if (orderData.order) {
+              orders.push(orderData.order);
+            }
+          } catch (error) {
+            console.error(`Error fetching order ${orderId}:`, error);
+          }
+        }
+      }
+      
+      console.log('Final orders for performance calculation:', orders.length);
+      
+      // Replace the original data with our processed orders
+      data = { orders };
+      
+      console.log('=================================================');
+    }
+    
+    // Log performance endpoint data
+    if (endpoint === '/performance' && response.ok) {
+      console.log('=== PERFORMANCE RESULTS ===');
+      console.log('Total orders found:', data.orders?.length || 0);
+      if (data.orders && data.orders.length > 0) {
+        console.log('First order sample:', JSON.stringify(data.orders[0], null, 2));
+      } else {
+        console.log('No orders found in response');
+      }
+      console.log('============================');
     }
 
     // Calculate restaurant-specific metrics for performance endpoint

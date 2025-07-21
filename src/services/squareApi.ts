@@ -54,6 +54,8 @@ class SquareApiService {
 
   async getPerformanceMetrics(startDate: Date, endDate: Date, teamMemberId?: string): Promise<PerformanceMetrics> {
     const startTime = Date.now();
+    
+    // Use the new payments->orders approach for team member specific performance
     const result = await this.callEdgeFunction('/performance', {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
@@ -82,11 +84,7 @@ class SquareApiService {
     return metrics;
   }
 
-  // Legacy method for compatibility - client-side calculation
-
   calculatePerformanceMetrics(orders: Order[], startDate: Date, endDate: Date): PerformanceMetrics {
-    // This method is kept for compatibility but real calculation now happens server-side
-    console.warn('Using legacy client-side calculation. Consider using calculatePerformanceMetrics() instead.');
     
     const netSales = orders.reduce((sum, order) => 
       sum + (order.total_money?.amount || 0), 0) / 100;
